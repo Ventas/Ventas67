@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Wellmade</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- ✅ Font Awesome CDN funcional -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f9f9f9 0%, #e0e7ff 100%);
+        }
+
+        .button {
+            background: linear-gradient(90deg, #6EE7B7 0%, #3B82F6 100%);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            opacity: 0.95;
+        }
+
+        .form-container {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-field:focus {
+            border-color: #4c51bf;
+            box-shadow: 0 0 0 2px rgba(75, 85, 223, 0.3);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen px-4">
+
+    <div class="form-container bg-white p-8 rounded-xl w-full max-w-md">
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+            <img src="/static/img/Final.jpg" alt="Wellmade Logo" class="h-28 object-contain">
+        </div>
+
+        <h2 class="text-3xl font-semibold text-center text-gray-800 mb-6">
+            Iniciar Sesión
+        </h2>
+
+        <form method="post" action="/login" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Usuario</label>
+                <input type="text" id="username" name="username" class="input-field w-full p-3 mt-1 border border-gray-300 rounded-lg focus:outline-none" required>
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <div class="relative">
+                    <input type="password" id="password" name="password" class="input-field w-full p-3 mt-1 border border-gray-300 rounded-lg focus:outline-none pr-12" required>
+                    <button type="button" onclick="togglePassword()" class="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <i id="eye-icon" class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold button transition-all duration-300">
+                Entrar
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm text-gray-500">
+            © 2025 Wellmade. Todos los derechos reservados.
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('eye-icon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

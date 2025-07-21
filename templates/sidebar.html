@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WELLMADE</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="sidebar">
+    <h1>WELLMADE</h1>
+
+    <a href="/dashboard" class="{% if page == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-box"></i> Inventario
+    </a>
+    <a href="/sales" class="{% if page == 'sales' %}active{% endif %}">
+        <i class="fas fa-shopping-cart"></i> Ventas
+    </a>
+    <a href="/reports" class="{% if page == 'reports' %}active{% endif %}">
+        <i class="fas fa-chart-line"></i> Informes
+    </a>
+
+    <!-- Logo al final -->
+    <!-- <div class="logo-bottom">
+        <img src="/static/img/logo.png" alt="Logo" /> -->
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Proveedores</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .btn-agregar {
+            margin: 20px auto;
+            display: block;
+        }
+        .modal-content label {
+            font-weight: bold;
+        }
+        .modal-content input {
+            margin-bottom: 15px;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        @media (max-width: 768px) {
+            .form-column {
+                flex: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-end mt-3">
+            <a href="/menu" class="btn btn-secondary fw-bold">
+                ⬅️ Volver al menú
+            </a>
+        </div>
+
+        <h1>Gestión de Proveedores</h1>
+
+        <button class="btn btn-success btn-agregar" onclick="abrirModalAgregar()">
+            <i class="fas fa-plus"></i> Agregar Proveedor
+        </button>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-4">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Razón Social</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th>Método de Pago</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proveedor in proveedores %}
+                    <tr>
+                        <td>{{ proveedor.nombre }}</td>
+                        <td>{{ proveedor.razon_social }}</td>
+                        <td>{{ proveedor.contacto }}</td>
+                        <td>{{ proveedor.telefono }}</td>
+                        <td>{{ proveedor.correo }}</td>
+                        <td>{{ proveedor.metodo_pago }}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm mb-1" onclick='abrirModalEditar({{ proveedor.id }}, "{{ proveedor.nombre }}", "{{ proveedor.razon_social }}", "{{ proveedor.contacto }}", "{{ proveedor.telefono }}", "{{ proveedor.correo }}", "{{ proveedor.metodo_pago }}")'>
+                                Editar
+                            </button>
+                            <form method="post" action="/proveedores/eliminar/{{ proveedor.id }}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este proveedor?')">
+                                <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal Agregar -->
+        <div id="modalAgregar" class="modal" tabindex="-1" style="display:none">
+            <div class="modal-dialog">
+                <div class="modal-content p-4">
+                    <span class="close text-end" onclick="document.getElementById('modalAgregar').style.display='none'">&times;</span>
+                    <h2 class="text-center">Agregar Proveedor</h2>
+                    <form method="post" action="/proveedores">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label>Nombre:</label>
+                                <input type="text" name="nombre" class="form-control" required>
+
+                                <label>Razón Social:</label>
+                                <input type="text" name="razon_social" class="form-control">
+
+                                <label>NIT/RUC:</label>
+                                <input type="text" name="nit_ruc" class="form-control">
+
+                                <label>Teléfono:</label>
+                                <input type="text" name="telefono" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label>Dirección:</label>
+                                <input type="text" name="direccion" class="form-control">
+
+                                <label>Correo:</label>
+                                <input type="email" name="correo" class="form-control">
+
+                                <label>Contacto:</label>
+                                <input type="text" name="contacto" class="form-control">
+
+                                <label>Método de Pago:</label>
+                                <input type="text" name="metodo_pago" class="form-control">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Agregar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Editar -->
+        <div id="modalEditar" class="modal" tabindex="-1" style="display:none">
+            <div class="modal-dialog">
+                <div class="modal-content p-4">
+                    <span class="close text-end" onclick="document.getElementById('modalEditar').style.display='none'">&times;</span>
+                    <h2 class="text-center">Editar Proveedor</h2>
+                    <form method="post" id="formEditar" action="">
+                        <input type="hidden" name="id" id="editar_id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label>Nombre:</label>
+                                <input type="text" name="nombre" id="editar_nombre" class="form-control" required>
+
+                                <label>Razón Social:</label>
+                                <input type="text" name="razon_social" id="editar_razon_social" class="form-control">
+
+                                <label>Contacto:</label>
+                                <input type="text" name="contacto" id="editar_contacto" class="form-control">
+
+                                <label>Teléfono:</label>
+                                <input type="text" name="telefono" id="editar_telefono" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label>Correo:</label>
+                                <input type="email" name="correo" id="editar_correo" class="form-control">
+
+                                <label>Método de Pago:</label>
+                                <input type="text" name="metodo_pago" id="editar_metodo_pago" class="form-control">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Actualizar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalAgregar() {
+            document.getElementById("modalAgregar").style.display = "block";
+        }
+
+        function abrirModalEditar(id, nombre, razon_social, contacto, telefono, correo, metodo_pago) {
+            document.getElementById('editar_id').value = id;
+            document.getElementById('editar_nombre').value = nombre;
+            document.getElementById('editar_razon_social').value = razon_social;
+            document.getElementById('editar_contacto').value = contacto;
+            document.getElementById('editar_telefono').value = telefono;
+            document.getElementById('editar_correo').value = correo;
+            document.getElementById('editar_metodo_pago').value = metodo_pago;
+            document.getElementById('formEditar').action = `/proveedores/editar/${id}`;
+            document.getElementById("modalEditar").style.display = "block";
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
