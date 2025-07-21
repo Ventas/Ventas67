@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pyodbc
+python-multipart
+mysql-connector-python
+reportlab
+numpy
+matplotlib
+pandas
+sqlalchemy
+python-dotenv
+pymysql
+jinja2
+openpyxl
+typing
