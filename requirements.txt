@@ -14,4 +14,3 @@ jinja2
 openpyxl
 typing
 serial
-serial.tools
