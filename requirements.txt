@@ -13,4 +13,4 @@ pymysql
 jinja2
 openpyxl
 typing
-serial
+pyserial
