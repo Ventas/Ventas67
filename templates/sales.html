@@ -303,21 +303,31 @@ async function refreshSerialPorts() {
         
         data.ports.forEach(port => {
             const option = document.createElement('option');
-            option.value = port;
-            option.textContent = port;
+            option.value = port.device;
+            option.textContent = `${port.device} - ${port.description || 'Sin descripción'} (${port.manufacturer})`;
             select.appendChild(option);
         });
+        
+        if (data.ports.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = "No se encontraron puertos seriales";
+            option.disabled = true;
+            select.appendChild(option);
+            document.getElementById('connect-btn').disabled = true;
+        } else {
+            document.getElementById('connect-btn').disabled = false;
+        }
     } catch (error) {
         console.error('Error al obtener puertos seriales:', error);
-        alert('Error al obtener puertos seriales');
+        alert('Error al obtener puertos seriales. Verifica la consola para más detalles.');
     }
 }
 
-// Conectar a la balanza
+// Conectar a la balanza con manejo mejorado de errores
 async function connectScale() {
     const port = document.getElementById('serial-port').value;
     if (!port) {
-        alert('Selecciona un puerto serial');
+        alert('Por favor selecciona un puerto serial de la lista');
         return;
     }
     
@@ -327,18 +337,28 @@ async function connectScale() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ port: port })
+            body: JSON.stringify({ 
+                port: port,
+                baudrate: 9600  // Asegúrate de usar el baudrate correcto para tu balanza
+            })
         });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Error al conectar con la balanza');
+        }
         
         const data = await response.json();
         if (data.status === 'connected') {
             scaleConnected = true;
             updateScaleUI(true);
             startWeightUpdates();
+            alert(`Conectado exitosamente al puerto ${port}`);
         }
     } catch (error) {
         console.error('Error al conectar:', error);
-        alert('Error al conectar con la balanza');
+        alert(`Error al conectar: ${error.message}`);
+        updateScaleUI(false);
     }
 }
 

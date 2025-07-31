@@ -568,11 +568,11 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         </style>
     </head>
     <body>
-        <div class="header">Panaderia y minimercado La herradura</div>
-        <div class="info">Calle 15 no 8-09</div>
+        <div class="header">La Cava de los Quesos</div>
+        <div class="info">Cra 11 No 66-23</div>
         <div class="info-line">
-            <span>Tel: XXXXX</span>
-            <span>RFC: XXXX000000XX</span>
+            <span>Tel: 3123339424</span>
+            <span>RFC: 51771188-9</span>
         </div>
         
         <div class="info-line">
@@ -634,9 +634,17 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
 
 @router.get("/serial-ports")
 def list_serial_ports():
-    """Lista los puertos seriales disponibles"""
+    """Lista los puertos seriales disponibles con más información"""
     ports = serial.tools.list_ports.comports()
-    return {"ports": [port.device for port in ports]}
+    port_info = []
+    for port in ports:
+        port_info.append({
+            "device": port.device,
+            "description": port.description,
+            "hwid": port.hwid,
+            "manufacturer": port.manufacturer if port.manufacturer else "Desconocido"
+        })
+    return {"ports": port_info}
 
 @router.post("/connect-scale")
 def connect_to_scale(port: str, baudrate: int = 9600):
@@ -663,5 +671,16 @@ def read_scale():
         line = connect_to_scale.ser.readline().decode('utf-8').strip()
         weight = float(line)  # Ajusta el parsing según el formato de tu balanza
         return {"weight": weight}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/disconnect-scale")
+def disconnect_scale():
+    """Desconecta la balanza"""
+    try:
+        if hasattr(connect_to_scale, 'ser') and connect_to_scale.ser:
+            connect_to_scale.ser.close()
+            del connect_to_scale.ser
+        return {"status": "disconnected"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
