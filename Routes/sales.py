@@ -21,6 +21,10 @@ from reportlab.lib import colors
 from reportlab.lib.units import mm, inch
 import tempfile
 from io import BytesIO
+import serial
+import serial.tools.list_ports
+from fastapi import HTTPException
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -627,3 +631,37 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     """
     
     return html_content
+
+@router.get("/serial-ports")
+def list_serial_ports():
+    """Lista los puertos seriales disponibles"""
+    ports = serial.tools.list_ports.comports()
+    return {"ports": [port.device for port in ports]}
+
+@router.post("/connect-scale")
+def connect_to_scale(port: str, baudrate: int = 9600):
+    """Conecta a la balanza"""
+    try:
+        # Cierra la conexión si ya existe
+        if hasattr(connect_to_scale, 'ser') and connect_to_scale.ser:
+            connect_to_scale.ser.close()
+        
+        # Abre nueva conexión
+        connect_to_scale.ser = serial.Serial(port, baudrate, timeout=1)
+        return {"status": "connected", "port": port}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/read-scale")
+def read_scale():
+    """Lee el peso actual de la balanza"""
+    if not hasattr(connect_to_scale, 'ser') or not connect_to_scale.ser:
+        raise HTTPException(status_code=400, detail="Balanza no conectada")
+    
+    try:
+        # Lee datos de la balanza (ajusta según el protocolo de tu balanza)
+        line = connect_to_scale.ser.readline().decode('utf-8').strip()
+        weight = float(line)  # Ajusta el parsing según el formato de tu balanza
+        return {"weight": weight}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

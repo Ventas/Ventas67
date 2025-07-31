@@ -69,6 +69,51 @@
   <!-- Balanza -->
   <div class="barcode-section">
     <h3>⚖️ Balanza Digital</h3>
+    <div class="mb-3">
+        <label for="serial-port" class="form-label">Puerto Serial:</label>
+        <div class="input-group">
+            <select id="serial-port" class="form-select">
+                <option value="">Seleccionar puerto...</option>
+            </select>
+            <button class="btn btn-outline-secondary" type="button" onclick="refreshSerialPorts()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Estado de conexión -->
+    <div id="scale-status" class="alert alert-secondary mb-3">
+        <i class="bi bi-usb-symbol"></i> Balanza no conectada
+    </div>
+    
+    <!-- Display de peso -->
+    <div class="mb-3 p-3 bg-light border rounded text-center">
+        <h4 id="weight-display">0.000 kg</h4>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="auto-update-check" checked>
+            <label class="form-check-label" for="auto-update-check">Actualización automática</label>
+        </div>
+    </div>
+    
+    <!-- Producto seleccionado para pesar -->
+    <div id="weight-product-info" class="alert alert-info d-none">
+        <i class="bi bi-info-circle"></i> Producto por peso seleccionado: 
+        <strong id="weight-product-name"></strong>
+    </div>
+    
+    <!-- Botones de control -->
+    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+        <button id="connect-btn" class="btn btn-primary" onclick="connectScale()">
+            <i class="bi bi-plug"></i> Conectar
+        </button>
+        <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectScale()" disabled>
+            <i class="bi bi-plug-fill"></i> Desconectar
+        </button>
+        <button id="tare-btn" class="btn btn-warning" onclick="sendTareCommand()" disabled>
+            <i class="bi bi-arrow-counterclockwise"></i> Tara
+        </button>
+    </div>
+</div> 
     <div id="weight-display" class="mb-3 p-2 bg-light border rounded">
   <label for="manual-weight">Peso actual (kg):</label>
   <input type="number" id="manual-weight" step="0.001" class="form-control mt-1" value="0.000" oninput="updateManualWeight()">
@@ -242,28 +287,185 @@
 </div>
 <script>
 
-    let currentWeight = 0;
-let selectedProduct = null;
+  let currentWeight = 0;
+  let selectedProduct = null;
+  let scaleConnected = false;
+  let selectedWeightProduct = null;
+  let weightUpdateInterval = null;
+// Actualizar lista de puertos seriales
+async function refreshSerialPorts() {
+    try {
+        const response = await fetch('/serial-ports');
+        const data = await response.json();
+        
+        const select = document.getElementById('serial-port');
+        select.innerHTML = '<option value="">Seleccionar puerto...</option>';
+        
+        data.ports.forEach(port => {
+            const option = document.createElement('option');
+            option.value = port;
+            option.textContent = port;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error al obtener puertos seriales:', error);
+        alert('Error al obtener puertos seriales');
+    }
+}
 
+// Conectar a la balanza
+async function connectScale() {
+    const port = document.getElementById('serial-port').value;
+    if (!port) {
+        alert('Selecciona un puerto serial');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/connect-scale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ port: port })
+        });
+        
+        const data = await response.json();
+        if (data.status === 'connected') {
+            scaleConnected = true;
+            updateScaleUI(true);
+            startWeightUpdates();
+        }
+    } catch (error) {
+        console.error('Error al conectar:', error);
+        alert('Error al conectar con la balanza');
+    }
+}
+
+// Desconectar la balanza
+async function disconnectScale() {
+    try {
+        // Detener las actualizaciones
+        stopWeightUpdates();
+        
+        // Enviar comando para desconectar (el backend cerrará la conexión)
+        await fetch('/disconnect-scale');
+        
+        scaleConnected = false;
+        updateScaleUI(false);
+    } catch (error) {
+        console.error('Error al desconectar:', error);
+    }
+}
+
+// Enviar comando de tara
+async function sendTareCommand() {
+    if (!scaleConnected) return;
+    
+    try {
+        await fetch('/tare-scale');
+        // La próxima lectura mostrará el peso con tara
+    } catch (error) {
+        console.error('Error al enviar tara:', error);
+    }
+}
+
+// Iniciar actualizaciones periódicas del peso
+function startWeightUpdates() {
+    if (weightUpdateInterval) clearInterval(weightUpdateInterval);
+    
+    weightUpdateInterval = setInterval(async () => {
+        if (!document.getElementById('auto-update-check').checked) return;
+        
+        try {
+            const response = await fetch('/read-scale');
+            const data = await response.json();
+            
+            if (data.weight !== undefined) {
+                currentWeight = data.weight;
+                updateWeightDisplay();
+                
+                // Si hay un producto de peso seleccionado, actualizar su cantidad
+                if (selectedWeightProduct) {
+                    updateProductQuantity(selectedWeightProduct, currentWeight);
+                }
+            }
+        } catch (error) {
+            console.error('Error al leer peso:', error);
+        }
+    }, 500); // Actualizar cada 500ms
+}
+
+// Detener actualizaciones de peso
+function stopWeightUpdates() {
+    if (weightUpdateInterval) {
+        clearInterval(weightUpdateInterval);
+        weightUpdateInterval = null;
+    }
+}
+
+// Actualizar la UI según el estado de conexión
+function updateScaleUI(connected) {
+    const statusElement = document.getElementById('scale-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const tareBtn = document.getElementById('tare-btn');
+    
+    if (connected) {
+        statusElement.className = 'alert alert-success mb-3';
+        statusElement.innerHTML = '<i class="bi bi-check-circle"></i> Balanza conectada';
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+        tareBtn.disabled = false;
+    } else {
+        statusElement.className = 'alert alert-secondary mb-3';
+        statusElement.innerHTML = '<i class="bi bi-usb-symbol"></i> Balanza no conectada';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        tareBtn.disabled = true;
+        document.getElementById('weight-display').textContent = '0.000 kg';
+    }
+}
+
+// Actualizar el display de peso
+function updateWeightDisplay() {
+    const weightDisplay = document.getElementById('weight-display');
+    weightDisplay.textContent = currentWeight.toFixed(3) + ' kg';
+    
+    // Cambiar color si el peso es negativo
+    if (currentWeight < 0) {
+        weightDisplay.style.color = 'red';
+    } else {
+        weightDisplay.style.color = '';
+    }
+}
 // Simulador de lectura de balanza (reemplazar con conexión real)
 
 // Función para manejar la selección de producto
 function onProductSelected(product) {
-    // Verificar si el producto es por peso (basado en la unidad de stock)
     const isWeightProduct = product.unidad_stock.toLowerCase().includes('kg') || 
                           product.unidad_stock.toLowerCase().includes('gr') ||
                           product.unidad_stock.toLowerCase().includes('g');
     
     if (isWeightProduct) {
-        selectedProduct = product;
-        document.getElementById('weight-product-info').style.display = 'block';
+        selectedWeightProduct = product;
+        document.getElementById('weight-product-info').classList.remove('d-none');
         document.getElementById('weight-product-name').textContent = product.nombre;
-        updateProductQuantity(product, currentWeight);
+        
+        // Si la balanza está conectada, agregar el producto con el peso actual
+        if (scaleConnected) {
+            addProduct(product);
+        }
     } else {
-        selectedProduct = null;
-        document.getElementById('weight-product-info').style.display = 'none';
+        selectedWeightProduct = null;
+        document.getElementById('weight-product-info').classList.add('d-none');
     }
 }
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    refreshSerialPorts();
+});
 
 // Función para actualizar la cantidad del producto en la tabla
 function updateProductQuantity(product, weight) {
