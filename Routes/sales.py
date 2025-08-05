@@ -499,7 +499,7 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         productos_html += f"""
         <tr>
             <td style="width: 45%; word-wrap: break-word;">{nombre_producto}</td>
-            <td style="width: 15%; text-align: center;">{venta.quantity}</td>
+            <td style="width: 10%; text-align: center;">{venta.quantity}</td>
             <td style="width: 10%; text-align: right;">${precio_unitario:.2f}</td>
             <td style="width: 10%; text-align: right;">${venta.total:.2f}</td>
         </tr>
