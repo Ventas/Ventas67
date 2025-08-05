@@ -498,10 +498,10 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             
         productos_html += f"""
         <tr>
-            <td>{nombre_producto}</td>
-            <td class="right">{venta.quantity}</td>
-            <td class="right">${precio_unitario:.2f}</td>
-            <td class="right">${venta.total:.2f}</td>
+            <td style="width: 45%; word-wrap: break-word;">{nombre_producto}</td>
+            <td style="width: 15%; text-align: center;">{venta.quantity}</td>
+            <td style="width: 20%; text-align: right;">${precio_unitario:.2f}</td>
+            <td style="width: 20%; text-align: right;">${venta.total:.2f}</td>
         </tr>
         """
     
@@ -566,6 +566,7 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
                 width: 100%;
                 border-collapse: collapse;
                 margin: 3mm 0;
+                table-layout: fixed;
             }}
             th {{
                 text-align: left;
@@ -577,6 +578,8 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
                 padding: 1mm 0;
                 vertical-align: top;
                 border-bottom: 1px dotted #ccc;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }}
             .right {{
                 text-align: right;
@@ -648,10 +651,10 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         <table>
             <thead>
                 <tr>
-                    <th>Producto</th>
-                    <th class="right">Cant</th>
-                    <th class="right">P.Unit</th>
-                    <th class="right">Total</th>
+                    <th style="width: 45%;">Producto</th>
+                    <th style="width: 15%; text-align: center;">Cant</th>
+                    <th style="width: 20%; text-align: right;">P.Unit</th>
+                    <th style="width: 20%; text-align: right;">Total</th>
                 </tr>
             </thead>
             <tbody>
