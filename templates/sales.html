@@ -67,39 +67,7 @@
   </div>
 
 <div class="barcode-section">
-    <h3>⚖️ Balanza Digital</h3>
-    <div class="mb-3">
-        <label for="serial-port" class="form-label">Configuración del Puerto Serial:</label>
-        
-        <!-- Selector de puerto serial con opción manual -->
-        <div class="input-group mb-2">
-            <select id="serial-port" class="form-select">
-                <option value="">Seleccionar puerto...</option>
-                <option value="manual">Ingresar manualmente</option>
-            </select>
-            <button class="btn btn-outline-secondary" type="button" onclick="refreshSerialPorts()">
-                <i class="bi bi-arrow-clockwise"></i> Actualizar
-            </button>
-        </div>
-        
-        <!-- Campo para entrada manual (oculto inicialmente) -->
-        <div id="manual-port-container" class="mb-3" style="display: none;">
-            <label for="manual-port" class="form-label">Nombre del puerto:</label>
-            <input type="text" id="manual-port" class="form-control" placeholder="Ej: COM3, /dev/ttyUSB0">
-        </div>
-        
-        <!-- Selector de baudrate -->
-        <div class="mb-3">
-            <label for="baudrate" class="form-label">Velocidad (baudrate):</label>
-            <select id="baudrate" class="form-select">
-                <option value="9600">9600</option>
-                <option value="19200">19200</option>
-                <option value="38400">38400</option>
-                <option value="57600">57600</option>
-                <option value="115200">115200</option>
-            </select>
-        </div>
-    </div>
+    <h3>⚖️ Balanza Digital (Web Serial API)</h3>
     
     <!-- Estado de conexión -->
     <div id="scale-status" class="alert alert-secondary mb-3">
@@ -109,18 +77,14 @@
     <!-- Display de peso -->
     <div class="mb-3 p-3 bg-light border rounded text-center">
         <h4 id="weight-display">0.000 kg</h4>
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="auto-update-check" checked>
-            <label class="form-check-label" for="auto-update-check">Actualización automática</label>
-        </div>
     </div>
     
     <!-- Botones de control -->
     <div class="d-grid gap-2 d-md-flex justify-content-md-between">
-        <button id="connect-btn" class="btn btn-primary" onclick="connectScale()">
-            <i class="bi bi-plug"></i> Conectar
+        <button id="connect-btn" class="btn btn-primary" onclick="connectSerial()">
+            <i class="bi bi-plug"></i> Conectar Balanza
         </button>
-        <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectScale()" disabled>
+        <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectSerial()" disabled>
             <i class="bi bi-plug-fill"></i> Desconectar
         </button>
         <button id="tare-btn" class="btn btn-warning" onclick="sendTareCommand()" disabled>
@@ -128,7 +92,6 @@
         </button>
     </div>
 </div>
-
   <!-- Formulario de venta -->
   <form method="post" action="/process-sale" onsubmit="return validateForm()">
     <div class="row g-4">
@@ -278,189 +241,96 @@
   </div>
 </div>
 <script>
+let serialPort = null;
+let reader = null;
+let currentWeight = 0;
+let selectedWeightProduct = null;
 
-  let currentWeight = 0;
-  let selectedProduct = null;
-  let scaleConnected = false;
-  let selectedWeightProduct = null;
-  let weightUpdateInterval = null;
-// Actualizar lista de puertos seriales
-async function refreshSerialPorts() {
+async function connectSerial() {
     try {
-        const response = await fetch('/serial-ports');
-        const data = await response.json();
+        // Solicitar puerto serial al usuario
+        serialPort = await navigator.serial.requestPort();
         
-        const select = document.getElementById('serial-port');
-        
-        // Guardar la selección actual
-        const currentSelection = select.value;
-        
-        // Limpiar y agregar opciones básicas
-        select.innerHTML = '<option value="">Seleccionar puerto...</option>' +
-                          '<option value="manual">Ingresar manualmente</option>';
-        
-        // Agregar puertos detectados
-        data.ports.forEach(port => {
-            const option = document.createElement('option');
-            option.value = port.device;
-            option.textContent = `${port.device} - ${port.description || 'Sin descripción'}`;
-            select.appendChild(option);
+        // Abrir el puerto con la configuración adecuada
+        await serialPort.open({ 
+            baudRate: 9600,  // Ajusta según tu balanza
+            dataBits: 8,
+            stopBits: 1,
+            parity: 'none'
         });
         
-        // Restaurar selección si aún existe
-        if (currentSelection && Array.from(select.options).some(o => o.value === currentSelection)) {
-            select.value = currentSelection;
-            handlePortSelection();
-        }
+        updateScaleUI(true);
         
-        // Habilitar/deshabilitar botón de conexión
-        document.getElementById('connect-btn').disabled = select.value === '';
+        // Iniciar lectura continua
+        readFromSerial();
         
     } catch (error) {
-        console.error('Error al obtener puertos seriales:', error);
-        alert('Error al obtener puertos seriales. Verifica la consola para más detalles.');
-    }
-}
-
-// Manejar selección de puerto
-function handlePortSelection() {
-    const select = document.getElementById('serial-port');
-    const manualContainer = document.getElementById('manual-port-container');
-    
-    if (select.value === 'manual') {
-        manualContainer.style.display = 'block';
-        document.getElementById('manual-port').focus();
-    } else {
-        manualContainer.style.display = 'none';
-    }
-    
-    // Habilitar botón de conexión si hay un puerto seleccionado
-    document.getElementById('connect-btn').disabled = select.value === '';
-}
-
-// Conectar a la balanza
-async function connectScale() {
-    const portSelect = document.getElementById('serial-port');
-    let port;
-    
-    if (portSelect.value === 'manual') {
-        port = document.getElementById('manual-port').value.trim();
-        if (!port) {
-            alert('Por favor ingresa un nombre de puerto válido');
-            return;
-        }
-    } else {
-        port = portSelect.value;
-    }
-    
-    const baudrate = document.getElementById('baudrate').value;
-    
-    try {
-        const response = await fetch('/connect-scale', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                port: port,
-                baudrate: parseInt(baudrate)
-            })
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Error al conectar con la balanza');
-        }
-        
-        const data = await response.json();
-        if (data.status === 'connected') {
-            scaleConnected = true;
-            updateScaleUI(true);
-            startWeightUpdates();
-            alert(`Conectado exitosamente al puerto ${port}`);
-        }
-    } catch (error) {
-        console.error('Error al conectar:', error);
+        console.error("Error al conectar:", error);
+        updateScaleUI(false);
         alert(`Error al conectar: ${error.message}`);
-        updateScaleUI(false);
     }
 }
 
-// Inicializar al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-    refreshSerialPorts();
-    
-    // Event listener para el selector de puerto
-    document.getElementById('serial-port').addEventListener('change', handlePortSelection);
-    
-    // Event listener para el campo manual
-    document.getElementById('manual-port').addEventListener('input', function() {
-        document.getElementById('connect-btn').disabled = this.value.trim() === '';
-    });
-});
-// Desconectar la balanza
-async function disconnectScale() {
+async function readFromSerial() {
     try {
-        // Detener las actualizaciones
-        stopWeightUpdates();
+        const decoder = new TextDecoderStream();
+        const inputStream = serialPort.readable.pipeThrough(decoder);
+        reader = inputStream.getReader();
         
-        // Enviar comando para desconectar (el backend cerrará la conexión)
-        await fetch('/disconnect-scale');
-        
-        scaleConnected = false;
-        updateScaleUI(false);
-    } catch (error) {
-        console.error('Error al desconectar:', error);
-    }
-}
-
-// Enviar comando de tara
-async function sendTareCommand() {
-    if (!scaleConnected) return;
-    
-    try {
-        await fetch('/tare-scale');
-        // La próxima lectura mostrará el peso con tara
-    } catch (error) {
-        console.error('Error al enviar tara:', error);
-    }
-}
-
-// Iniciar actualizaciones periódicas del peso
-function startWeightUpdates() {
-    if (weightUpdateInterval) clearInterval(weightUpdateInterval);
-    
-    weightUpdateInterval = setInterval(async () => {
-        if (!document.getElementById('auto-update-check').checked) return;
-        
-        try {
-            const response = await fetch('/read-scale');
-            const data = await response.json();
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                reader.releaseLock();
+                break;
+            }
             
-            if (data.weight !== undefined) {
-                currentWeight = data.weight;
+            // Procesar los datos recibidos (ajusta según el protocolo de tu balanza)
+            const weightMatch = value.match(/(\d+\.\d+)/); // Ejemplo para peso: "1.234 kg"
+            if (weightMatch) {
+                currentWeight = parseFloat(weightMatch[1]);
                 updateWeightDisplay();
                 
-                // Si hay un producto de peso seleccionado, actualizar su cantidad
+                // Actualizar producto seleccionado si existe
                 if (selectedWeightProduct) {
                     updateProductQuantity(selectedWeightProduct, currentWeight);
                 }
             }
-        } catch (error) {
-            console.error('Error al leer peso:', error);
         }
-    }, 500); // Actualizar cada 500ms
-}
-
-// Detener actualizaciones de peso
-function stopWeightUpdates() {
-    if (weightUpdateInterval) {
-        clearInterval(weightUpdateInterval);
-        weightUpdateInterval = null;
+    } catch (error) {
+        console.error("Error en lectura serial:", error);
+        updateScaleUI(false);
     }
 }
 
-// Actualizar la UI según el estado de conexión
+async function disconnectSerial() {
+    try {
+        if (reader) {
+            await reader.cancel();
+            reader = null;
+        }
+        if (serialPort) {
+            await serialPort.close();
+            serialPort = null;
+        }
+        updateScaleUI(false);
+    } catch (error) {
+        console.error("Error al desconectar:", error);
+    }
+}
+
+async function sendTareCommand() {
+    if (!serialPort || !serialPort.writable) return;
+    
+    try {
+        const writer = serialPort.writable.getWriter();
+        // Envía el comando de tara (ajusta según tu balanza)
+        await writer.write(new TextEncoder().encode("T\r\n")); 
+        writer.releaseLock();
+    } catch (error) {
+        console.error("Error enviando tara:", error);
+    }
+}
+
 function updateScaleUI(connected) {
     const statusElement = document.getElementById('scale-status');
     const connectBtn = document.getElementById('connect-btn');
@@ -483,6 +353,25 @@ function updateScaleUI(connected) {
     }
 }
 
+function updateWeightDisplay() {
+    const weightDisplay = document.getElementById('weight-display');
+    weightDisplay.textContent = currentWeight.toFixed(3) + ' kg';
+    
+    if (currentWeight < 0) {
+        weightDisplay.style.color = 'red';
+    } else {
+        weightDisplay.style.color = '';
+    }
+}
+
+// Verificar compatibilidad al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    if (!('serial' in navigator)) {
+        document.getElementById('scale-status').innerHTML = 
+            '<i class="bi bi-exclamation-triangle"></i> Web Serial API no soportada. Usa Chrome/Edge.';
+        document.getElementById('connect-btn').disabled = true;
+    }
+});
 // Actualizar el display de peso
 function updateWeightDisplay() {
     const weightDisplay = document.getElementById('weight-display');
