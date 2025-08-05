@@ -484,24 +484,49 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     iva_total = sum(v.iva for v in ventas)
     total_general = sum(v.total for v in ventas)
     
-    # Generar filas de productos para la tabla (versión compacta)
+    # Generar filas de productos para la tabla (versión para 80mm)
     productos_html = ""
     for venta in ventas:
         producto = db.query(models.Product).filter(models.Product.id == venta.product_id).first()
         nombre_producto = producto.nombre if producto else 'Desconocido'
-        # Acortar nombres de productos para 58mm
-        if len(nombre_producto) > 20:
-            nombre_producto = nombre_producto[:17] + "..."
+        # Permitir nombres más largos para 80mm
+        if len(nombre_producto) > 30:
+            nombre_producto = nombre_producto[:27] + "..."
+        
+        # Calcular precio unitario (subtotal / cantidad)
+        precio_unitario = venta.subtotal / venta.quantity if venta.quantity > 0 else 0
             
         productos_html += f"""
         <tr>
             <td>{nombre_producto}</td>
             <td class="right">{venta.quantity}</td>
+            <td class="right">${precio_unitario:.2f}</td>
             <td class="right">${venta.total:.2f}</td>
         </tr>
         """
     
-    # Generar HTML completo optimizado para 58mm
+    # Sección de domicilios mejorada
+    domicilio_html = ""
+    if hasattr(main_sale, 'delivery') and main_sale.delivery:
+        domicilio_html = f"""
+        <div class="delivery-section">
+            <div class="section-title">🚚 PEDIDO PARA DOMICILIO</div>
+            <div class="info-line"><span>Cliente:</span> <span class="bold">{getattr(main_sale, 'customer_name', 'No especificado')}</span></div>
+            <div class="info-line"><span>Dirección:</span> <span>{getattr(main_sale, 'delivery_address', 'No especificado')}</span></div>
+            <div class="info-line"><span>Teléfono:</span> <span class="bold">{getattr(main_sale, 'customer_phone', 'No especificado')}</span></div>
+            <div class="info-line"><span>Notas:</span> <span>{getattr(main_sale, 'delivery_notes', 'Ninguna')}</span></div>
+        </div>
+        """
+    else:
+        domicilio_html = """
+        <div class="delivery-info">
+            <div class="section-title">📞 ¿NECESITAS DOMICILIO?</div>
+            <div class="info-line center">¡Llámanos al 312-333-9424!</div>
+            <div class="info-line center">Horario: 9am - 8pm</div>
+        </div>
+        """
+    
+    # Generar HTML completo optimizado para impresora térmica de 80mm
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -511,81 +536,122 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         <style>
             body {{
                 font-family: 'Arial Narrow', Arial, sans-serif;
-                font-size: 10px;
-                width: 58mm;
+                font-size: 14px;
+                width: 80mm;
                 margin: 0;
-                padding: 2px;
+                padding: 2mm;
             }}
             .header {{
                 text-align: center;
                 font-weight: bold;
-                font-size: 11px;
-                margin-bottom: 5px;
+                font-size: 16px;
+                margin-bottom: 3mm;
+                border-bottom: 1px dashed #000;
+                padding-bottom: 2mm;
             }}
             .info {{
-                margin-bottom: 3px;
+                margin-bottom: 2mm;
                 line-height: 1.2;
             }}
             .info-line {{
                 display: flex;
                 justify-content: space-between;
+                margin-bottom: 1mm;
+            }}
+            .center {{
+                text-align: center;
+                justify-content: center;
             }}
             table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin: 5px 0;
+                margin: 3mm 0;
             }}
             th {{
                 text-align: left;
-                border-bottom: 1px solid #000;
-                padding: 1px 0;
+                border-bottom: 2px solid #000;
+                padding: 1mm 0;
                 font-weight: bold;
             }}
             td {{
-                padding: 1px 0;
+                padding: 1mm 0;
                 vertical-align: top;
+                border-bottom: 1px dotted #ccc;
             }}
             .right {{
                 text-align: right;
             }}
             .total {{
                 font-weight: bold;
-                margin-top: 5px;
+                margin-top: 3mm;
             }}
             .footer {{
                 text-align: center;
-                margin-top: 10px;
-                font-size: 9px;
+                margin-top: 4mm;
+                font-size: 12px;
+                border-top: 1px dashed #000;
+                padding-top: 2mm;
             }}
             .summary {{
-                margin-top: 5px;
-                border-top: 1px solid #000;
-                padding-top: 3px;
+                margin-top: 3mm;
+                border-top: 2px solid #000;
+                padding-top: 2mm;
             }}
             .nowrap {{
                 white-space: nowrap;
             }}
+            .section-title {{
+                font-weight: bold;
+                margin: 3mm 0 2mm 0;
+                text-align: center;
+                background-color: #f0f0f0;
+                padding: 1mm;
+            }}
+            .delivery-section {{
+                margin: 3mm 0;
+                padding: 2mm;
+                border: 2px solid #000;
+                border-radius: 2mm;
+                background-color: #fff8e1;
+            }}
+            .delivery-info {{
+                margin: 3mm 0;
+                padding: 2mm;
+                border: 1px dashed #000;
+                border-radius: 2mm;
+            }}
+            .bold {{
+                font-weight: bold;
+            }}
+            .qr-code {{
+                text-align: center;
+                margin: 3mm 0;
+            }}
         </style>
     </head>
     <body>
-        <div class="header">La Cava de los Quesos</div>
-        <div class="info">Cra 11 No 66-23</div>
-        <div class="info-line">
-            <span>Tel: 3123339424</span>
-            <span>RFC: 51771188-9</span>
-        </div>
+        <div class="header">LA CAVA DE LOS QUESOS</div>
+        <div class="info center">Cra 11 No 66-23 - Tel: 3123339424</div>
+        <div class="info center">RFC: 51771188-9</div>
         
         <div class="info-line">
-            <span>Fecha: {main_sale.timestamp.strftime('%d/%m/%Y %H:%M')}</span>
-            <span>Ticket: {main_sale.sale_group_id}</span>
+            <span class="bold">Fecha:</span>
+            <span>{main_sale.timestamp.strftime('%d/%m/%Y %H:%M')}</span>
         </div>
+        <div class="info-line">
+            <span class="bold">Ticket #:</span>
+            <span>{main_sale.sale_group_id}</span>
+        </div>
+        
+        {domicilio_html}
         
         <table>
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th class="right nowrap">Cant</th>
-                    <th class="right nowrap">Total</th>
+                    <th class="right">Cant</th>
+                    <th class="right">P.Unit</th>
+                    <th class="right">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -608,11 +674,25 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             </div>
         </div>
         
-        <div class="info">Pago: {main_sale.payment_method.upper()}</div>
+        <div class="info-line">
+            <span class="bold">Método de pago:</span>
+            <span>{main_sale.payment_method.upper()}</span>
+        </div>
+        <div class="info-line">
+            <span class="bold">Atendió:</span>
+            <span>{getattr(main_sale, 'employee_name', 'Sistema')}</span>
+        </div>
+        
+        <div class="qr-code">
+            <!-- Espacio para código QR si es necesario -->
+            <!-- <img src="qr_code.png" width="80" height="80"> -->
+        </div>
         
         <div class="footer">
-            ¡Gracias por su compra!<br>
-            Sistema Wellmade
+            <div class="bold">¡Gracias por su compra!</div>
+            <div>Para domicilios llama al:</div>
+            <div class="bold">312-333-9424</div>
+            <div>Sistema Wellmade</div>
         </div>
         
         <script>
@@ -637,13 +717,42 @@ def list_serial_ports():
     """Lista los puertos seriales disponibles con más información"""
     ports = serial.tools.list_ports.comports()
     port_info = []
+    
+    if not ports:
+        # Intenta forzar la detección en sistemas Windows
+        try:
+            from serial.tools.list_ports_windows import comports
+            ports = comports()
+        except:
+            pass
+    
     for port in ports:
-        port_info.append({
-            "device": port.device,
-            "description": port.description,
-            "hwid": port.hwid,
-            "manufacturer": port.manufacturer if port.manufacturer else "Desconocido"
-        })
+        try:
+            port_info.append({
+                "device": port.device,
+                "description": port.description,
+                "hwid": port.hwid,
+                "manufacturer": port.manufacturer if port.manufacturer else "Desconocido",
+                "serial_number": getattr(port, 'serial_number', 'N/A')
+            })
+        except Exception as e:
+            print(f"Error procesando puerto {port}: {str(e)}")
+    
+    # Si no hay puertos, intenta listar manualmente (especialmente en Windows)
+    if not port_info:
+        import sys
+        if sys.platform == 'win32':
+            # Intenta listar puertos COM1-COM20 en Windows
+            for i in range(1, 21):
+                port_name = f"COM{i}"
+                port_info.append({
+                    "device": port_name,
+                    "description": "Puerto serie (detección manual)",
+                    "hwid": "N/A",
+                    "manufacturer": "Desconocido",
+                    "serial_number": "N/A"
+                })
+    
     return {"ports": port_info}
 
 @router.post("/connect-scale")
