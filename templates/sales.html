@@ -92,6 +92,13 @@
         </button>
     </div>
 </div>
+<div class="mb-3">
+      <label for="search" class="form-label">Buscar producto:</label>
+      <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
+    </div>
+    <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar producto</button>
+  </div>
+
   <!-- Formulario de venta -->
   <form method="post" action="/process-sale" onsubmit="return validateForm()">
     <div class="row g-4">
