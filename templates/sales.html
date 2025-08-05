@@ -66,18 +66,38 @@
     <a href="/menu" class="btn btn-secondary">⬅️ Volver al menú</a>
   </div>
 
-  <!-- Balanza -->
-  <div class="barcode-section">
+<div class="barcode-section">
     <h3>⚖️ Balanza Digital</h3>
     <div class="mb-3">
-        <label for="serial-port" class="form-label">Puerto Serial:</label>
-        <div class="input-group">
+        <label for="serial-port" class="form-label">Configuración del Puerto Serial:</label>
+        
+        <!-- Selector de puerto serial con opción manual -->
+        <div class="input-group mb-2">
             <select id="serial-port" class="form-select">
                 <option value="">Seleccionar puerto...</option>
+                <option value="manual">Ingresar manualmente</option>
             </select>
             <button class="btn btn-outline-secondary" type="button" onclick="refreshSerialPorts()">
-                <i class="bi bi-arrow-clockwise"></i>
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
             </button>
+        </div>
+        
+        <!-- Campo para entrada manual (oculto inicialmente) -->
+        <div id="manual-port-container" class="mb-3" style="display: none;">
+            <label for="manual-port" class="form-label">Nombre del puerto:</label>
+            <input type="text" id="manual-port" class="form-control" placeholder="Ej: COM3, /dev/ttyUSB0">
+        </div>
+        
+        <!-- Selector de baudrate -->
+        <div class="mb-3">
+            <label for="baudrate" class="form-label">Velocidad (baudrate):</label>
+            <select id="baudrate" class="form-select">
+                <option value="9600">9600</option>
+                <option value="19200">19200</option>
+                <option value="38400">38400</option>
+                <option value="57600">57600</option>
+                <option value="115200">115200</option>
+            </select>
         </div>
     </div>
     
@@ -95,12 +115,6 @@
         </div>
     </div>
     
-    <!-- Producto seleccionado para pesar -->
-    <div id="weight-product-info" class="alert alert-info d-none">
-        <i class="bi bi-info-circle"></i> Producto por peso seleccionado: 
-        <strong id="weight-product-name"></strong>
-    </div>
-    
     <!-- Botones de control -->
     <div class="d-grid gap-2 d-md-flex justify-content-md-between">
         <button id="connect-btn" class="btn btn-primary" onclick="connectScale()">
@@ -113,29 +127,7 @@
             <i class="bi bi-arrow-counterclockwise"></i> Tara
         </button>
     </div>
-</div> 
-    <div id="weight-display" class="mb-3 p-2 bg-light border rounded">
-  <label for="manual-weight">Peso actual (kg):</label>
-  <input type="number" id="manual-weight" step="0.001" class="form-control mt-1" value="0.000" oninput="updateManualWeight()">
 </div>
-    <div id="weight-product-info" class="alert alert-info d-none">
-      <i class="bi bi-info-circle"></i> Producto por peso seleccionado: <strong id="weight-product-name"></strong>. La cantidad se actualizará automáticamente.
-    </div>
-    <div class="mb-3">
-      <label for="search" class="form-label">Buscar producto:</label>
-      <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
-    </div>
-    <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar producto</button>
-  </div>
-
-  <!-- Escáner -->
-  <div class="barcode-section">
-    <h3>📷 Escanear código de barras</h3>
-    <div class="input-group">
-      <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
-      <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
-    </div>
-  </div>
 
   <!-- Formulario de venta -->
   <form method="post" action="/process-sale" onsubmit="return validateForm()">
@@ -299,37 +291,69 @@ async function refreshSerialPorts() {
         const data = await response.json();
         
         const select = document.getElementById('serial-port');
-        select.innerHTML = '<option value="">Seleccionar puerto...</option>';
         
+        // Guardar la selección actual
+        const currentSelection = select.value;
+        
+        // Limpiar y agregar opciones básicas
+        select.innerHTML = '<option value="">Seleccionar puerto...</option>' +
+                          '<option value="manual">Ingresar manualmente</option>';
+        
+        // Agregar puertos detectados
         data.ports.forEach(port => {
             const option = document.createElement('option');
             option.value = port.device;
-            option.textContent = `${port.device} - ${port.description || 'Sin descripción'} (${port.manufacturer})`;
+            option.textContent = `${port.device} - ${port.description || 'Sin descripción'}`;
             select.appendChild(option);
         });
         
-        if (data.ports.length === 0) {
-            const option = document.createElement('option');
-            option.textContent = "No se encontraron puertos seriales";
-            option.disabled = true;
-            select.appendChild(option);
-            document.getElementById('connect-btn').disabled = true;
-        } else {
-            document.getElementById('connect-btn').disabled = false;
+        // Restaurar selección si aún existe
+        if (currentSelection && Array.from(select.options).some(o => o.value === currentSelection)) {
+            select.value = currentSelection;
+            handlePortSelection();
         }
+        
+        // Habilitar/deshabilitar botón de conexión
+        document.getElementById('connect-btn').disabled = select.value === '';
+        
     } catch (error) {
         console.error('Error al obtener puertos seriales:', error);
         alert('Error al obtener puertos seriales. Verifica la consola para más detalles.');
     }
 }
 
-// Conectar a la balanza con manejo mejorado de errores
-async function connectScale() {
-    const port = document.getElementById('serial-port').value;
-    if (!port) {
-        alert('Por favor selecciona un puerto serial de la lista');
-        return;
+// Manejar selección de puerto
+function handlePortSelection() {
+    const select = document.getElementById('serial-port');
+    const manualContainer = document.getElementById('manual-port-container');
+    
+    if (select.value === 'manual') {
+        manualContainer.style.display = 'block';
+        document.getElementById('manual-port').focus();
+    } else {
+        manualContainer.style.display = 'none';
     }
+    
+    // Habilitar botón de conexión si hay un puerto seleccionado
+    document.getElementById('connect-btn').disabled = select.value === '';
+}
+
+// Conectar a la balanza
+async function connectScale() {
+    const portSelect = document.getElementById('serial-port');
+    let port;
+    
+    if (portSelect.value === 'manual') {
+        port = document.getElementById('manual-port').value.trim();
+        if (!port) {
+            alert('Por favor ingresa un nombre de puerto válido');
+            return;
+        }
+    } else {
+        port = portSelect.value;
+    }
+    
+    const baudrate = document.getElementById('baudrate').value;
     
     try {
         const response = await fetch('/connect-scale', {
@@ -339,7 +363,7 @@ async function connectScale() {
             },
             body: JSON.stringify({ 
                 port: port,
-                baudrate: 9600  // Asegúrate de usar el baudrate correcto para tu balanza
+                baudrate: parseInt(baudrate)
             })
         });
         
@@ -362,6 +386,18 @@ async function connectScale() {
     }
 }
 
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    refreshSerialPorts();
+    
+    // Event listener para el selector de puerto
+    document.getElementById('serial-port').addEventListener('change', handlePortSelection);
+    
+    // Event listener para el campo manual
+    document.getElementById('manual-port').addEventListener('input', function() {
+        document.getElementById('connect-btn').disabled = this.value.trim() === '';
+    });
+});
 // Desconectar la balanza
 async function disconnectScale() {
     try {
