@@ -484,49 +484,29 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     iva_total = sum(v.iva for v in ventas)
     total_general = sum(v.total for v in ventas)
     
-    # Generar filas de productos para la tabla (versión para 80mm)
+    # Generar filas de productos para la tabla
     productos_html = ""
     for venta in ventas:
         producto = db.query(models.Product).filter(models.Product.id == venta.product_id).first()
         nombre_producto = producto.nombre if producto else 'Desconocido'
-        # Permitir nombres más largos para 80mm
-        if len(nombre_producto) > 30:
-            nombre_producto = nombre_producto[:27] + "..."
+        # Limitar longitud del nombre para impresora térmica
+        if len(nombre_producto) > 20:
+            nombre_producto = nombre_producto[:17] + "..."
         
-        # Calcular precio unitario (subtotal / cantidad)
         precio_unitario = venta.subtotal / venta.quantity if venta.quantity > 0 else 0
             
         productos_html += f"""
         <tr>
-            <td style="width: 45%; word-wrap: break-word;">{nombre_producto}</td>
+            <td style="width: 50%;">{nombre_producto}</td>
             <td style="width: 15%; text-align: center;">{venta.quantity}</td>
-            <td style="width: 20%; text-align: right;">${precio_unitario:.2f}</td>
-            <td style="width: 20%; text-align: right;">${venta.total:.2f}</td>
+            <td style="width: 35%; text-align: right;">${precio_unitario:,.2f}</td>
+        </tr>
+        <tr>
+            <td colspan="3" style="text-align: right;">${venta.total:,.2f}</td>
         </tr>
         """
     
-    # Sección de domicilios mejorada
-    domicilio_html = ""
-    if hasattr(main_sale, 'delivery') and main_sale.delivery:
-        domicilio_html = f"""
-        <div class="delivery-section">
-            <div class="section-title">🚚 PEDIDO PARA DOMICILIO</div>
-            <div class="info-line"><span>Cliente:</span> <span class="bold">{getattr(main_sale, 'customer_name', 'No especificado')}</span></div>
-            <div class="info-line"><span>Dirección:</span> <span>{getattr(main_sale, 'delivery_address', 'No especificado')}</span></div>
-            <div class="info-line"><span>Teléfono:</span> <span class="bold">{getattr(main_sale, 'customer_phone', 'No especificado')}</span></div>
-            <div class="info-line"><span>Notas:</span> <span>{getattr(main_sale, 'delivery_notes', 'Ninguna')}</span></div>
-        </div>
-        """
-    else:
-        domicilio_html = """
-        <div class="delivery-info">
-            <div class="section-title">📞 ¿NECESITAS DOMICILIO?</div>
-            <div class="info-line center">¡Llámanos al 312-333-9424!</div>
-            <div class="info-line center">Horario: 9am - 8pm</div>
-        </div>
-        """
-    
-    # Generar HTML completo optimizado para impresora térmica de 80mm
+    # HTML optimizado para impresión térmica
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -536,7 +516,7 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         <style>
             body {{
                 font-family: 'Arial Narrow', Arial, sans-serif;
-                font-size: 14px;
+                font-size: 12px;
                 width: 80mm;
                 margin: 0;
                 padding: 2mm;
@@ -544,12 +524,12 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             .header {{
                 text-align: center;
                 font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 3mm;
-                border-bottom: 1px dashed #000;
-                padding-bottom: 2mm;
+                font-size: 14px;
+                margin-bottom: 2mm;
+                padding-bottom: 1mm;
             }}
             .info {{
+                text-align: center;
                 margin-bottom: 2mm;
                 line-height: 1.2;
             }}
@@ -560,82 +540,57 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             }}
             .center {{
                 text-align: center;
-                justify-content: center;
             }}
             table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin: 3mm 0;
+                margin: 2mm 0;
                 table-layout: fixed;
             }}
             th {{
                 text-align: left;
-                border-bottom: 2px solid #000;
                 padding: 1mm 0;
-                font-weight: bold;
+                border-bottom: 1px solid #000;
             }}
             td {{
                 padding: 1mm 0;
                 vertical-align: top;
-                border-bottom: 1px dotted #ccc;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }}
-            .right {{
-                text-align: right;
-            }}
-            .total {{
-                font-weight: bold;
+            .total-section {{
                 margin-top: 3mm;
+                border-top: 1px solid #000;
+                padding-top: 2mm;
+            }}
+            .total-line {{
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 1mm;
+            }}
+            .grand-total {{
+                font-weight: bold;
+            }}
+            .delivery-info {{
+                margin: 2mm 0;
+                padding: 1mm;
+                text-align: center;
+                border: 1px dashed #000;
             }}
             .footer {{
                 text-align: center;
-                margin-top: 4mm;
-                font-size: 12px;
+                margin-top: 3mm;
+                font-size: 11px;
                 border-top: 1px dashed #000;
                 padding-top: 2mm;
             }}
-            .summary {{
-                margin-top: 3mm;
-                border-top: 2px solid #000;
-                padding-top: 2mm;
-            }}
-            .nowrap {{
-                white-space: nowrap;
-            }}
-            .section-title {{
-                font-weight: bold;
-                margin: 3mm 0 2mm 0;
-                text-align: center;
-                background-color: #f0f0f0;
-                padding: 1mm;
-            }}
-            .delivery-section {{
-                margin: 3mm 0;
-                padding: 2mm;
-                border: 2px solid #000;
-                border-radius: 2mm;
-                background-color: #fff8e1;
-            }}
-            .delivery-info {{
-                margin: 3mm 0;
-                padding: 2mm;
-                border: 1px dashed #000;
-                border-radius: 2mm;
-            }}
             .bold {{
                 font-weight: bold;
-            }}
-            .qr-code {{
-                text-align: center;
-                margin: 3mm 0;
             }}
         </style>
     </head>
     <body>
         <div class="header">LA CAVA DE LOS QUESOS</div>
-        <div class="info center">Cra 11 No 66-23 - Tel: 3123339424</div>
-        <div class="info center">RFC: 51771188-9</div>
+        <div class="info">Cra 11 No 66-23 - Tel: 3123339424</div>
+        <div class="info">RFC: 51771188-9</div>
         
         <div class="info-line">
             <span class="bold">Fecha:</span>
@@ -646,15 +601,18 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             <span>{main_sale.sale_group_id}</span>
         </div>
         
-        {domicilio_html}
+        <div class="delivery-info">
+            <div class="bold">¿NECESITAS DOMICILIO?</div>
+            <div>¡Llámanos al 312-333-9424!</div>
+            <div>Horario: 9am - 8pm</div>
+        </div>
         
         <table>
             <thead>
                 <tr>
-                    <th style="width: 45%;">Producto</th>
+                    <th style="width: 50%;">Producto</th>
                     <th style="width: 15%; text-align: center;">Cant</th>
-                    <th style="width: 20%; text-align: right;">P.Unit</th>
-                    <th style="width: 20%; text-align: right;">Total</th>
+                    <th style="width: 35%; text-align: right;">P.Unit</th>
                 </tr>
             </thead>
             <tbody>
@@ -662,18 +620,18 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             </tbody>
         </table>
         
-        <div class="summary">
-            <div class="info-line">
+        <div class="total-section">
+            <div class="total-line">
                 <span>Subtotal:</span>
-                <span>${subtotal:.2f}</span>
+                <span>${subtotal:,.2f}</span>
             </div>
-            <div class="info-line">
+            <div class="total-line">
                 <span>IVA:</span>
-                <span>${iva_total:.2f}</span>
+                <span>${iva_total:,.2f}</span>
             </div>
-            <div class="info-line total">
+            <div class="total-line grand-total">
                 <span>TOTAL:</span>
-                <span>${total_general:.2f}</span>
+                <span>${total_general:,.2f}</span>
             </div>
         </div>
         
@@ -684,11 +642,6 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         <div class="info-line">
             <span class="bold">Atendió:</span>
             <span>{getattr(main_sale, 'employee_name', 'Sistema')}</span>
-        </div>
-        
-        <div class="qr-code">
-            <!-- Espacio para código QR si es necesario -->
-            <!-- <img src="qr_code.png" width="80" height="80"> -->
         </div>
         
         <div class="footer">
@@ -714,7 +667,6 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     """
     
     return html_content
-
 @router.get("/serial-ports")
 def list_serial_ports():
     """Lista los puertos seriales disponibles con más información"""
