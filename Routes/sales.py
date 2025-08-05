@@ -484,49 +484,49 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     iva_total = sum(v.iva for v in ventas)
     total_general = sum(v.total for v in ventas)
     
-    # Generar filas de productos para la tabla (versión para 80mm)
+    # Generar filas de productos para la tabla (versión para 70mm)
     productos_html = ""
     for venta in ventas:
         producto = db.query(models.Product).filter(models.Product.id == venta.product_id).first()
         nombre_producto = producto.nombre if producto else 'Desconocido'
-        # Permitir nombres más largos para 80mm
-        if len(nombre_producto) > 30:
-            nombre_producto = nombre_producto[:27] + "..."
+        # Permitir nombres más largos para 70mm
+        if len(nombre_producto) > 20:
+            nombre_producto = nombre_producto[:18] + "..."
         
         # Calcular precio unitario (subtotal / cantidad)
         precio_unitario = venta.subtotal / venta.quantity if venta.quantity > 0 else 0
             
         productos_html += f"""
         <tr>
-    <td style="width: 45%; word-wrap: break-word; font-size: 12px;">{nombre_producto}</td>
-    <td style="width: 10%; text-align: center; font-size: 12px;">{venta.quantity}</td>
-    <td style="width: 10%; text-align: right; font-size: 12px;">${precio_unitario:.2f}</td>
-    <td style="width: 10%; text-align: right; font-size: 12px;">${venta.total:.2f}</td>
-    </tr>
-    """
+            <td style="width: 40%; word-wrap: break-word; font-size: 11px;">{nombre_producto}</td>
+            <td style="width: 15%; text-align: center; font-size: 11px;">{venta.quantity}</td>
+            <td style="width: 22%; text-align: right; font-size: 11px;">${precio_unitario:.2f}</td>
+            <td style="width: 23%; text-align: right; font-size: 11px;">${venta.total:.2f}</td>
+        </tr>
+        """
     
     # Sección de domicilios mejorada
     domicilio_html = ""
     if hasattr(main_sale, 'delivery') and main_sale.delivery:
         domicilio_html = f"""
         <div class="delivery-section">
-            <div class="section-title">🚚 PEDIDO PARA DOMICILIO</div>
-            <div class="info-line"><span>Cliente:</span> <span class="bold">{getattr(main_sale, 'customer_name', 'No especificado')}</span></div>
-            <div class="info-line"><span>Dirección:</span> <span>{getattr(main_sale, 'delivery_address', 'No especificado')}</span></div>
-            <div class="info-line"><span>Teléfono:</span> <span class="bold">{getattr(main_sale, 'customer_phone', 'No especificado')}</span></div>
-            <div class="info-line"><span>Notas:</span> <span>{getattr(main_sale, 'delivery_notes', 'Ninguna')}</span></div>
+            <div class="section-title" style="font-size: 12px;">🚚 PEDIDO PARA DOMICILIO</div>
+            <div class="info-line" style="font-size: 11px;"><span>Cliente:</span> <span class="bold">{getattr(main_sale, 'customer_name', 'No especificado')}</span></div>
+            <div class="info-line" style="font-size: 11px;"><span>Dirección:</span> <span>{getattr(main_sale, 'delivery_address', 'No especificado')}</span></div>
+            <div class="info-line" style="font-size: 11px;"><span>Teléfono:</span> <span class="bold">{getattr(main_sale, 'customer_phone', 'No especificado')}</span></div>
+            <div class="info-line" style="font-size: 11px;"><span>Notas:</span> <span>{getattr(main_sale, 'delivery_notes', 'Ninguna')}</span></div>
         </div>
         """
     else:
         domicilio_html = """
-        <div class="delivery-info">
-            <div class="section-title">📞 ¿NECESITAS DOMICILIO?</div>
+        <div class="delivery-info" style="font-size: 11px;">
+            <div class="section-title" style="font-size: 12px;">📞 ¿NECESITAS DOMICILIO?</div>
             <div class="info-line center">¡Llámanos al 312-333-9424!</div>
             <div class="info-line center">Horario: 9am - 8pm</div>
         </div>
         """
     
-    # Generar HTML completo optimizado para impresora térmica de 80mm
+    # Generar HTML completo optimizado para impresora térmica de 70mm
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -536,106 +536,101 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         <style>
             body {{
                 font-family: 'Arial Narrow', Arial, sans-serif;
-                font-size: 14px;
-                width: 80mm;
+                font-size: 12px;
+                width: 70mm;
                 margin: 0;
-                padding: 2mm;
+                padding: 1mm;
             }}
             .header {{
                 text-align: center;
                 font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 3mm;
-                border-bottom: 1px dashed #000;
-                padding-bottom: 2mm;
+                font-size: 14px;
+                margin-bottom: 2mm;
+                padding-bottom: 1mm;
             }}
             .info {{
-                margin-bottom: 2mm;
-                line-height: 1.2;
+                margin-bottom: 1mm;
+                line-height: 1.1;
+                font-size: 11px;
+                text-align: center;
             }}
             .info-line {{
                 display: flex;
                 justify-content: space-between;
                 margin-bottom: 1mm;
+                font-size: 11px;
             }}
             .center {{
                 text-align: center;
-                justify-content: center;
             }}
             table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin: 3mm 0;
+                margin: 2mm 0;
                 table-layout: fixed;
+                font-size: 11px;
             }}
             th {{
                 text-align: left;
-                border-bottom: 2px solid #000;
-                padding: 1mm 0;
+                border-bottom: 1px solid #000;
+                padding: 0.5mm 0;
                 font-weight: bold;
+                font-size: 11px;
             }}
             td {{
-                padding: 1mm 0;
+                padding: 0.5mm 0;
                 vertical-align: top;
                 border-bottom: 1px dotted #ccc;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }}
             .right {{
                 text-align: right;
             }}
             .total {{
                 font-weight: bold;
-                margin-top: 3mm;
+                margin-top: 2mm;
             }}
             .footer {{
                 text-align: center;
-                margin-top: 4mm;
-                font-size: 12px;
-                border-top: 1px dashed #000;
-                padding-top: 2mm;
+                margin-top: 2mm;
+                font-size: 10px;
+                padding-top: 1mm;
             }}
             .summary {{
-                margin-top: 3mm;
-                border-top: 2px solid #000;
-                padding-top: 2mm;
-            }}
-            .nowrap {{
-                white-space: nowrap;
+                margin-top: 2mm;
+                border-top: 1px solid #000;
+                padding-top: 1mm;
             }}
             .section-title {{
                 font-weight: bold;
-                margin: 3mm 0 2mm 0;
+                margin: 2mm 0 1mm 0;
                 text-align: center;
                 background-color: #f0f0f0;
-                padding: 1mm;
+                padding: 0.5mm;
             }}
             .delivery-section {{
-                margin: 3mm 0;
-                padding: 2mm;
-                border: 2px solid #000;
-                border-radius: 2mm;
+                margin: 2mm 0;
+                padding: 1mm;
+                border: 1px solid #000;
+                border-radius: 1mm;
                 background-color: #fff8e1;
+                font-size: 11px;
             }}
             .delivery-info {{
-                margin: 3mm 0;
-                padding: 2mm;
+                margin: 2mm 0;
+                padding: 1mm;
                 border: 1px dashed #000;
-                border-radius: 2mm;
+                border-radius: 1mm;
+                font-size: 11px;
             }}
             .bold {{
                 font-weight: bold;
-            }}
-            .qr-code {{
-                text-align: center;
-                margin: 3mm 0;
             }}
         </style>
     </head>
     <body>
         <div class="header">LA CAVA DE LOS QUESOS</div>
-        <div class="info center">Cra 11 No 66-23 - Tel: 3123339424</div>
-        <div class="info center">RFC: 51771188-9</div>
+        <div class="info">Cra 11 No 66-23 - Tel: 3123339424</div>
+        <div class="info">RFC: 51771188-9</div>
         
         <div class="info-line">
             <span class="bold">Fecha:</span>
@@ -648,19 +643,19 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         
         {domicilio_html}
         
-       <table>
-    <thead>
-        <tr>
-            <th style="width: 45%; font-size: 12px;">Producto</th>
-            <th style="width: 15%; text-align: center; font-size: 12px;">Cant</th>
-            <th style="width: 20%; text-align: right; font-size: 12px;">P.Unit</th>
-            <th style="width: 20%; text-align: right; font-size: 12px;">Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        {productos_html}
-    </tbody>
-</table>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Producto</th>
+                    <th style="width: 15%; text-align: center;">Cant</th>
+                    <th style="width: 22%; text-align: right;">P.Unit</th>
+                    <th style="width: 23%; text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {productos_html}
+            </tbody>
+        </table>
         
         <div class="summary">
             <div class="info-line">
@@ -686,11 +681,6 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             <span>{getattr(main_sale, 'employee_name', 'Sistema')}</span>
         </div>
         
-        <div class="qr-code">
-            <!-- Espacio para código QR si es necesario -->
-            <!-- <img src="qr_code.png" width="80" height="80"> -->
-        </div>
-        
         <div class="footer">
             <div class="bold">¡Gracias por su compra!</div>
             <div>Para domicilios llama al:</div>
@@ -714,7 +704,6 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     """
     
     return html_content
-
 @router.get("/serial-ports")
 def list_serial_ports():
     """Lista los puertos seriales disponibles con más información"""
