@@ -498,12 +498,12 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             
         productos_html += f"""
         <tr>
-            <td style="width: 45%; word-wrap: break-word;">{nombre_producto}</td>
-            <td style="width: 10%; text-align: center;">{venta.quantity}</td>
-            <td style="width: 10%; text-align: right;">${precio_unitario:.2f}</td>
-            <td style="width: 10%; text-align: right;">${venta.total:.2f}</td>
-        </tr>
-        """
+    <td style="width: 45%; word-wrap: break-word; font-size: 12px;">{nombre_producto}</td>
+    <td style="width: 10%; text-align: center; font-size: 12px;">{venta.quantity}</td>
+    <td style="width: 10%; text-align: right; font-size: 12px;">${precio_unitario:.2f}</td>
+    <td style="width: 10%; text-align: right; font-size: 12px;">${venta.total:.2f}</td>
+    </tr>
+    """
     
     # Sección de domicilios mejorada
     domicilio_html = ""
@@ -648,19 +648,19 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
         
         {domicilio_html}
         
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 45%;">Producto</th>
-                    <th style="width: 15%; text-align: center;">Cant</th>
-                    <th style="width: 20%; text-align: right;">P.Unit</th>
-                    <th style="width: 20%; text-align: right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {productos_html}
-            </tbody>
-        </table>
+       <table>
+    <thead>
+        <tr>
+            <th style="width: 45%; font-size: 12px;">Producto</th>
+            <th style="width: 15%; text-align: center; font-size: 12px;">Cant</th>
+            <th style="width: 20%; text-align: right; font-size: 12px;">P.Unit</th>
+            <th style="width: 20%; text-align: right; font-size: 12px;">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {productos_html}
+    </tbody>
+</table>
         
         <div class="summary">
             <div class="info-line">
