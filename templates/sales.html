@@ -84,31 +84,33 @@
   <button type="button" class="btn btn-success mb-3" onclick="addProduct()">➕ Agregar producto</button>
 
   <!-- Sección de balanza -->
-  <div class="barcode-section">
-    <h3>⚖️ Balanza Digital (Web Serial API)</h3>
-    
-    <!-- Estado de conexión -->
-    <div id="scale-status" class="alert alert-secondary mb-3">
-        <i class="bi bi-usb-symbol"></i> Balanza no conectada
-    </div>
-    
-    <!-- Display de peso -->
-    <div class="mb-3 p-3 bg-light border rounded text-center">
-        <h4 id="weight-display">0.000 kg</h4>
-    </div>
-    
-    <!-- Botones de control -->
-    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
-        <button id="connect-btn" class="btn btn-primary" onclick="connectSerial()">
-            <i class="bi bi-plug"></i> Conectar Balanza
-        </button>
-        <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectSerial()" disabled>
-            <i class="bi bi-plug-fill"></i> Desconectar
-        </button>
-        <button id="tare-btn" class="btn btn-warning" onclick="sendTareCommand()" disabled>
-            <i class="bi bi-arrow-counterclockwise"></i> Tara
-        </button>
-    </div>
+ <div class="barcode-section">
+  <h3>⚖️ Balanza Digital (Web Serial API)</h3>
+  
+  <!-- Estado de conexión mejorado -->
+  <div id="scale-status" class="alert alert-secondary mb-3">
+    <i class="bi bi-usb-symbol"></i> Balanza no conectada
+    <span id="reconnect-message" class="small text-muted" style="display: none;">
+      Intentando reconectar automáticamente...
+    </span>
+  </div>
+  
+  <!-- Display de peso -->
+  <div class="mb-3 p-3 bg-light border rounded text-center">
+    <h4 id="weight-display">0.000 kg</h4>
+  </div>
+  
+  <!-- Botones de control -->
+  <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+    <button id="connect-btn" class="btn btn-primary" onclick="connectSerial()" style="display: none;">
+      <i class="bi bi-plug"></i> Conectar Balanza
+    </button>
+    <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectSerial()" disabled>
+      <i class="bi bi-plug-fill"></i> Desconectar
+    </button>
+    <button id="tare-btn" class="btn btn-warning" onclick="sendTareCommand()" disabled>
+      <i class="bi bi-arrow-counterclockwise"></i> Tara
+    </button>
   </div>
 </div>
   <!-- Formulario de venta -->
