@@ -99,6 +99,15 @@
     <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar producto</button>
   </div>
 
+ <!-- Escáner -->
+  <div class="barcode-section">
+    <h3>📷 Escanear código de barras</h3>
+    <div class="input-group">
+      <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
+      <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
+    </div>
+  </div>
+  
   <!-- Formulario de venta -->
   <form method="post" action="/process-sale" onsubmit="return validateForm()">
     <div class="row g-4">
