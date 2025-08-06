@@ -114,7 +114,7 @@
   </div>
 </div>
   <!-- Formulario de venta -->
-  <form method="post" action="/process-sale" onsubmit="return validateForm()">
+  <form id="venta-form" method="post" action="/process-sale" onsubmit="handleVenta(event)">
     <div class="row g-4">
       <div class="col-md-8">
         <div class="form-container">
@@ -710,6 +710,32 @@ function updateManualWeight() {
     // Si hay un producto seleccionado por peso, actualizar su cantidad
     if (selectedProduct) {
         updateProductQuantity(selectedProduct, currentWeight);
+    }
+}
+
+async function handleVenta(event) {
+    event.preventDefault(); // No recarga la página
+
+    const form = document.getElementById('venta-form');
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Error en la venta");
+
+        const resultHTML = await response.text();
+        
+        // Insertar resultado sin recargar la página
+        document.body.innerHTML = resultHTML;
+        // ⚠️ IMPORTANTE: Si haces esto, asegúrate de volver a conectar el DOM a los scripts (como balanza, productos, etc.)
+
+    } catch (err) {
+        alert("Error al registrar la venta");
+        console.error(err);
     }
 }
 </script>
