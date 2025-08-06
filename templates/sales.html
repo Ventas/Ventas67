@@ -66,7 +66,25 @@
     <a href="/menu" class="btn btn-secondary">⬅️ Volver al menú</a>
   </div>
 
-<div class="barcode-section">
+  <!-- Sección de búsqueda y escáner alineados -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label for="search" class="form-label">Buscar producto:</label>
+      <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
+    </div>
+    <div class="col-md-6">
+      <label for="barcode-input" class="form-label">📷 Escanear código de barras:</label>
+      <div class="input-group">
+        <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
+        <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-success mb-3" onclick="addProduct()">➕ Agregar producto</button>
+
+  <!-- Sección de balanza -->
+  <div class="barcode-section">
     <h3>⚖️ Balanza Digital (Web Serial API)</h3>
     
     <!-- Estado de conexión -->
@@ -91,23 +109,8 @@
             <i class="bi bi-arrow-counterclockwise"></i> Tara
         </button>
     </div>
+  </div>
 </div>
-<div class="mb-3">
-      <label for="search" class="form-label">Buscar producto:</label>
-      <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
-    </div>
-    <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar producto</button>
-  </div>
-
- <!-- Escáner -->
-  <div class="barcode-section">
-    <h3>📷 Escanear código de barras</h3>
-    <div class="input-group">
-      <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
-      <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
-    </div>
-  </div>
-  
   <!-- Formulario de venta -->
   <form method="post" action="/process-sale" onsubmit="return validateForm()">
     <div class="row g-4">
