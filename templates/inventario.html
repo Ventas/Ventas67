@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -76,7 +77,6 @@
                 <tbody>
                     {% for producto in productos %}
                     <tr class="{% if producto.fecha_vencimiento and producto.fecha_vencimiento < fecha_actual %}producto-vencido{% endif %}">
-                    <tr>
                         <td>{{ producto.id }}</td>
                         <td>{{ producto.nombre }}</td>
                         <td>{{ producto.descripcion }}</td>
@@ -182,12 +182,12 @@
 
     <script>
         document.getElementById("busqueda").addEventListener("keyup", function() {
-            let filtro = this.value.toLowerCase();
-            let filas = document.querySelectorAll("#tablaProductos tbody tr");
-            filas.forEach(fila => {
-                let nombre = fila.cells[1].textContent.toLowerCase();
-                let codigo = fila.cells[5].textContent.toLowerCase();
-                fila.style.display = (nombre.includes(filtro) || codigo.includes(filtro)) ? "" : "none";
+    let filtro = this.value.toLowerCase();
+    let filas = document.querySelectorAll("#tablaProductos tbody tr");
+    filas.forEach(fila => {
+        let nombre = fila.cells[1].textContent.toLowerCase(); // Celda 1 para nombre
+        let codigo = fila.cells[8].textContent.toLowerCase(); // Celda 8 para código de barras
+        fila.style.display = (nombre.includes(filtro) || codigo.includes(filtro)) ? "" : "none";
             });
         });
 
