@@ -146,13 +146,6 @@
     <a href="/menu" class="btn btn-secondary">⬅️ Volver al menú</a>
   </div>
 
-  <div class="tab-pane fade show active" id="sale-tab-pane" role="tabpanel" aria-labelledby="sale-tab">
-  <form id="sale-form" method="post" action="/process-sale">
-    <div class="row">
-      <!-- ... (todo el contenido de la pestaña de venta) ... -->
-    </div>
-  </form>
-</div>
   <!-- Pestañas principales -->
   <ul class="nav nav-tabs" id="mainTabs" role="tablist">
     <li class="nav-item" role="presentation">
@@ -169,113 +162,114 @@
   <div class="tab-content" id="mainTabsContent">
     <!-- Pestaña de Nueva Venta -->
     <div class="tab-pane fade show active" id="sale-tab-pane" role="tabpanel" aria-labelledby="sale-tab">
-      <div class="row">
-        <div class="col-md-8">
-          <!-- Escáner -->
-          <div class="barcode-section mb-3">
-            <h3>📷 Escanear código de barras</h3>
-            <div class="input-group">
-              <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
-              <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
+      <form id="sale-form" method="post" action="/process-sale">
+        <div class="row">
+          <div class="col-md-8">
+            <!-- Escáner -->
+            <div class="barcode-section mb-3">
+              <h3>📷 Escanear código de barras</h3>
+              <div class="input-group">
+                <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
+                <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
+              </div>
+            </div>
+
+            <!-- Búsqueda rápida -->
+            <div class="mb-3">
+              <label for="search" class="form-label">Buscar producto:</label>
+              <div class="input-group">
+                <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
+                <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar</button>
+              </div>
+            </div>
+
+            <!-- Productos -->
+            <div class="form-container">
+              <h3>🛒 Productos</h3>
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered sales-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Cantidad</th>
+                      <th>Stock</th>
+                      <th>Precio Unitario</th>
+                      <th>IVA %</th>
+                      <th>Subtotal</th>
+                      <th>Eliminar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summary-body">
+                    <!-- dinámico -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- Búsqueda rápida -->
-          <div class="mb-3">
-            <label for="search" class="form-label">Buscar producto:</label>
-            <div class="input-group">
-              <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
-              <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar</button>
-            </div>
-          </div>
-
-          <!-- Productos -->
-          <div class="form-container">
-            <h3>🛒 Productos</h3>
-            <div class="table-responsive">
-              <table class="table table-striped table-bordered sales-table">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Stock</th>
-                    <th>Precio Unitario</th>
-                    <th>IVA %</th>
-                    <th>Subtotal</th>
-                    <th>Eliminar</th>
-                  </tr>
-                </thead>
-                <tbody id="summary-body">
-                  <!-- dinámico -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <!-- Formulario de pago -->
-          <div class="form-container">
-            <h3>💳 Pago</h3>
-            <div class="mb-3">
-              <label for="payment_method" class="form-label">Método de pago:</label>
-              <select name="payment_method" id="payment_method" class="form-select" required>
-                <option value="">Seleccione...</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="Nequi">Nequi</option>
-                <option value="Daviplata">Daviplata</option>
-                <option value="Bancolombia">Bancolombia</option>
-              </select>
-            </div>
-            
-            <div class="mb-3">
-              <label>Subtotal:</label>
-              <div id="subtotal_display" class="fw-bold">$0.00</div>
-            </div>
-            
-            <div class="mb-3">
-              <label>IVA:</label>
-              <div id="iva_display" class="fw-bold">$0.00</div>
-            </div>
-            
-            <div class="mb-3">
-              <label>Total a pagar:</label>
-              <div id="total_display" class="fw-bold fs-5">$0.00</div>
-            </div>  
-            
-            <div class="mb-3">
-              <label for="money_received" class="form-label">Dinero recibido:</label>
-              <input type="number" step="0.01" id="money_received" name="money_received" class="form-control" required>
-            </div>
-            
-            <div class="mb-3">
-              <label>Cambio:</label>
-              <div id="change_display">$0.00</div>
-            </div>
-             <button type="button" class="btn btn-primary w-100 mt-3" onclick="processSale()">💾 Registrar venta</button>
+          <div class="col-md-4">
+            <!-- Formulario de pago -->
+            <div class="form-container">
+              <h3>💳 Pago</h3>
+              <div class="mb-3">
+                <label for="payment_method" class="form-label">Método de pago:</label>
+                <select name="payment_method" id="payment_method" class="form-select" required>
+                  <option value="">Seleccione...</option>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Daviplata">Daviplata</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <label>Subtotal:</label>
+                <div id="subtotal_display" class="fw-bold">$0.00</div>
+              </div>
+              
+              <div class="mb-3">
+                <label>IVA:</label>
+                <div id="iva_display" class="fw-bold">$0.00</div>
+              </div>
+              
+              <div class="mb-3">
+                <label>Total a pagar:</label>
+                <div id="total_display" class="fw-bold fs-5">$0.00</div>
+              </div>  
+              
+              <div class="mb-3">
+                <label for="money_received" class="form-label">Dinero recibido:</label>
+                <input type="number" step="0.01" id="money_received" name="money_received" class="form-control" required>
+              </div>
+              
+              <div class="mb-3">
+                <label>Cambio:</label>
+                <div id="change_display">$0.00</div>
+              </div>
+              <button type="button" class="btn btn-primary w-100 mt-3" onclick="processSale()">💾 Registrar venta</button>
             </div>
           </div>
         </div>
       </form>
-    </div>
 
-    <!-- Resultados (solo una sección) -->
-    {% if result %}
-    <div class="form-container" id="result-container">
-      <h2>Resultado:</h2>
-      {% if result.status == "ok" %}
-      <p><strong>Total:</strong> ${{ result.total }}</p>
-      <p><strong>Cambio:</strong> ${{ result.change }}</p>
-      <div class="d-flex flex-wrap gap-3 mt-3">
-        <button type="button" class="btn btn-info" onclick="printThermalTicket({{ result.sale_id }})">🖨️ Imprimir Ticket</button>
-        <button type="button" class="btn btn-success" onclick="downloadTicketPDF({{ result.sale_id }})">📄 Guardar PDF</button>
+      <!-- Resultados (solo una sección) -->
+      {% if result %}
+      <div class="form-container" id="result-container">
+        <h2>Resultado:</h2>
+        {% if result.status == "ok" %}
+        <p><strong>Total:</strong> ${{ result.total }}</p>
+        <p><strong>Cambio:</strong> ${{ result.change }}</p>
+        <div class="d-flex flex-wrap gap-3 mt-3">
+          <button type="button" class="btn btn-info" onclick="printThermalTicket({{ result.sale_id }})">🖨️ Imprimir Ticket</button>
+          <button type="button" class="btn btn-success" onclick="downloadTicketPDF({{ result.sale_id }})">📄 Guardar PDF</button>
+        </div>
+        {% else %}
+        <p class="text-danger fw-semibold">{{ result.message }}</p>
+        {% endif %}
       </div>
-      {% else %}
-      <p class="text-danger fw-semibold">{{ result.message }}</p>
       {% endif %}
     </div>
-    {% endif %}
 
     <!-- Pestaña de Historial -->
     <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab">
