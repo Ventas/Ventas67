@@ -48,125 +48,121 @@ def sales_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "productos": productos,
         "ventas": ventas,
-        "resumen": resumen
-        
+        "resumen": resumen,
+        "hoy": hoy
     })
 
-
 @router.post("/process-sale")
-def process_sale(
+async def process_sale(
     request: Request,
-    product: List[str] = Form(...),
-    quantity: List[float] = Form(...),
-    payment_method: str = Form(...),
-    money_received: float = Form(...),
     db: Session = Depends(get_db)
 ):
-    hoy = date.today()
-    ventas_hoy = db.query(models.Sale).filter(func.date(models.Sale.timestamp) == hoy).all()
+    try:
+        # Leer el cuerpo JSON
+        data = await request.json()
+        
+        # Validar datos básicos
+        if not data.get("payment_method") or not data.get("money_received"):
+            raise HTTPException(status_code=400, detail="Datos incompletos")
+            
+        if len(data.get("product", [])) != len(data.get("quantity", [])):
+            raise HTTPException(status_code=400, detail="Productos y cantidades no coinciden")
 
-    resumen = {
-        "total_vendido": sum(v.total for v in ventas_hoy),
-        "productos_vendidos": sum(v.quantity for v in ventas_hoy),
-        "numero_ventas": len(ventas_hoy)
-    }
+        # Resto de tu lógica de procesamiento...
+        hoy = date.today()
+        ventas_hoy = db.query(models.Sale).filter(func.date(models.Sale.timestamp) == hoy).all()
 
-    total_general = 0
-    subtotal = 0
-    iva_total = 0
-    sales_to_save = []
-    
-    max_group_id = db.query(func.max(models.Sale.sale_group_id)).scalar()
-    sale_group_id = 1 if max_group_id is None else max_group_id + 1
+        resumen = {
+            "total_vendido": sum(v.total for v in ventas_hoy),
+            "productos_vendidos": sum(v.quantity for v in ventas_hoy),
+            "numero_ventas": len(ventas_hoy)
+        }
 
-    for p, q in zip(product, quantity):
-        selected_product = db.query(models.Product).filter(models.Product.nombre == p).first()
+        total_general = 0
+        subtotal = 0
+        iva_total = 0
+        sales_to_save = []
+        
+        max_group_id = db.query(func.max(models.Sale.sale_group_id)).scalar()
+        sale_group_id = 1 if max_group_id is None else max_group_id + 1
 
-        if not selected_product:
-            return templates.TemplateResponse("sales.html", {
-                "request": request,
-                "result": {"status": "error", "message": f"Producto '{p}' no encontrado"},
-                "productos": db.query(models.Product).all(),
-                "ventas": db.query(models.Sale).all(),
-                "resumen": resumen
-            })
+        for p, q in zip(data["product"], data["quantity"]):
+            selected_product = db.query(models.Product).filter(models.Product.nombre == p).first()
 
-        if selected_product.stock < q:
-            return templates.TemplateResponse("sales.html", {
-                "request": request,
-                "result": {"status": "error", "message": f"Stock insuficiente para '{p}' (disponible: {selected_product.stock})"},
-                "productos": db.query(models.Product).all(),
-                "ventas": db.query(models.Sale).all(),
-                "resumen": resumen
-            })
+            if not selected_product:
+                return {
+                    "status": "error",
+                    "message": f"Producto '{p}' no encontrado"
+                }
 
-        # Calcular subtotal e IVA
-        precio_sin_iva = selected_product.precio
-        subtotal_producto = precio_sin_iva * q
-        iva_producto = subtotal_producto * (selected_product.iva / 100)
-        total_producto = subtotal_producto + iva_producto
+            if selected_product.stock < q:
+                return {
+                    "status": "error", 
+                    "message": f"Stock insuficiente para '{p}' (disponible: {selected_product.stock})"
+                }
 
-        subtotal += subtotal_producto
-        iva_total += iva_producto
-        total_general += total_producto
+            # Calcular subtotal e IVA
+            precio_sin_iva = selected_product.precio
+            subtotal_producto = precio_sin_iva * q
+            iva_producto = subtotal_producto * (selected_product.iva / 100)
+            total_producto = subtotal_producto + iva_producto
 
-        # Actualizar stock
-        selected_product.stock -= q
+            subtotal += subtotal_producto
+            iva_total += iva_producto
+            total_general += total_producto
 
-        new_sale = models.Sale(
-            sale_group_id=sale_group_id,
-            product_id=selected_product.id,
-            quantity=q,
-            subtotal=subtotal_producto,
-            iva=iva_producto,
-            total=total_producto,
-            payment_method=payment_method,
-            product_iva_percentage=selected_product.iva
-        )
-        sales_to_save.append(new_sale)
-        db.add(new_sale)
+            # Actualizar stock
+            selected_product.stock -= q
 
-    # Aplicar redondeo a múltiplos de 50 (1735 → 1750, 1785 → 1800)
-    redondeo = 50
-    total_general = ((total_general + redondeo - 1) // redondeo) * redondeo
+            new_sale = models.Sale(
+                sale_group_id=sale_group_id,
+                product_id=selected_product.id,
+                quantity=q,
+                subtotal=subtotal_producto,
+                iva=iva_producto,
+                total=total_producto,
+                payment_method=data["payment_method"],
+                product_iva_percentage=selected_product.iva,
+                money_received=data.get("money_received", 0),  # Asegúrate de incluir esto
+                change=data.get("change", 0)                   # Y esto también
+            )
+            sales_to_save.append(new_sale)
+            db.add(new_sale)
 
-    # Recalcular cambio con el total redondeado
-    change = money_received - total_general
+        # Aplicar redondeo
+        redondeo = 50
+        total_general = ((total_general + redondeo - 1) // redondeo) * redondeo
+        change = data["money_received"] - total_general
 
-    if change < 0:
-        return templates.TemplateResponse("sales.html", {
-            "request": request,
-            "result": {"status": "error", "message": "El dinero recibido no es suficiente"},
-            "productos": db.query(models.Product).all(),
-            "ventas": db.query(models.Sale).all(),
-            "resumen": resumen
-        })
+        if change < 0:
+            return {
+                "status": "error",
+                "message": "El dinero recibido no es suficiente"
+            }
 
-    db.commit()
+        db.commit()
 
-    # Actualizar resumen
-    ventas_hoy = db.query(models.Sale).filter(func.date(models.Sale.timestamp) == hoy).all()
-    resumen = {
-        "total_vendido": sum(v.total for v in ventas_hoy),
-        "productos_vendidos": sum(v.quantity for v in ventas_hoy),
-        "numero_ventas": len(ventas_hoy)
-    }
+        # Actualizar resumen
+        ventas_hoy = db.query(models.Sale).filter(func.date(models.Sale.timestamp) == hoy).all()
+        resumen = {
+            "total_vendido": sum(v.total for v in ventas_hoy),
+            "productos_vendidos": sum(v.quantity for v in ventas_hoy),
+            "numero_ventas": len(ventas_hoy)
+        }
 
-    return templates.TemplateResponse("sales.html", {
-        "request": request,
-        "result": {
+        return {
             "status": "ok", 
             "subtotal": subtotal,
             "iva": iva_total,
-            "total": total_general,  # Total redondeado
-            "change": change,       # Cambio con total redondeado
+            "total": total_general,
+            "change": change,
             "sale_id": sale_group_id,
-            "total_sin_redondeo": subtotal + iva_total  # Opcional: para referencia
-        },
-        "productos": db.query(models.Product).all(),
-        "ventas": db.query(models.Sale).all(),
-        "resumen": resumen
-    })
+            "total_sin_redondeo": subtotal + iva_total
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/delete-sale")
 def delete_sale(sale_id: int = Form(...), db: Session = Depends(get_db)):
     venta = db.query(models.Sale).filter(models.Sale.id == sale_id).first()
@@ -484,6 +480,11 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
     iva_total = sum(v.iva for v in ventas)
     total_general = sum(v.total for v in ventas)
     
+    # Obtener dinero recibido y cambio (necesitamos almacenar estos datos en la venta)
+    # Asumiremos que estos datos están en el primer registro de venta
+    dinero_recibido = getattr(main_sale, 'money_received', total_general)
+    cambio = max(dinero_recibido - total_general, 0)
+    
     # Generar filas de productos para la tabla (versión para 70mm)
     productos_html = ""
     for venta in ventas:
@@ -669,6 +670,14 @@ async def thermal_ticket(sale_group_id: int, db: Session = Depends(get_db)):
             <div class="info-line total">
                 <span>TOTAL:</span>
                 <span>${total_general:.2f}</span>
+            </div>
+            <div class="info-line">
+                <span>Recibido:</span>
+                <span>${dinero_recibido:.2f}</span>
+            </div>
+            <div class="info-line">
+                <span>Cambio:</span>
+                <span>${cambio:.2f}</span>
             </div>
         </div>
         

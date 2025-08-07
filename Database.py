@@ -158,9 +158,9 @@ Base = declarative_base()
 #     print("✅ Columna 'precio_proveedor' añadida a la tabla 'products' correctamente.")
 
 # with engine.connect() as conn:
-#     alter_table_sql = "ALTER TABLE products ADD COLUMN fecha_vencimiento DATE DEFAULT NULL;"
-#     conn.execute(text(alter_table_sql))
-#     print("✅ Columna 'fecha_vencimiento' añadida a la tabla 'products' correctamente.")
+#     rename_sql = "ALTER TABLE sales RENAME COLUMN money_change TO `change`;"
+#     conn.execute(text(rename_sql))
+#     print("✅ Columna renombrada correctamente.")
 
 
 def get_db():

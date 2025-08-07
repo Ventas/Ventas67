@@ -36,15 +36,17 @@ class Sale(Base):
     __tablename__ = "sales"
     
     id = Column(Integer, primary_key=True, index=True)
-    sale_group_id = Column(Integer)  # Mismo ID para todos los items de una misma venta
+    sale_group_id = Column(Integer)  # Para agrupar items de una misma venta
     product_id = Column(Integer, ForeignKey("products.id"))
-    quantity = Column(Integer)
+    quantity = Column(Float)
     subtotal = Column(Float)
-    total = Column(Float)
     iva = Column(Float)
+    total = Column(Float)
     payment_method = Column(String)
     product_iva_percentage = Column(Float)
-    timestamp = Column(DateTime, default=datetime.now)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    money_received = Column(Float)  # Nuevo campo
+    change = Column(Float)          # Nuevo campo
 
     # Relación hacia producto
     product = relationship("Product", back_populates="sales")

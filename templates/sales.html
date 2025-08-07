@@ -57,234 +57,458 @@
       border-radius: 10px;
       display: inline-block;
     }
+
+    /* Estilos para las pestañas */
+    .nav-tabs .nav-link {
+      color: #495057;
+      font-weight: 500;
+      border: none;
+      padding: 12px 20px;
+    }
+
+    .nav-tabs .nav-link.active {
+      color: #007bff;
+      background-color: white;
+      border-bottom: 3px solid #007bff;
+    }
+
+    .nav-tabs .nav-link:hover:not(.active) {
+      color: #007bff;
+      background-color: #f8f9fa;
+    }
+
+    .tab-content {
+      background-color: white;
+      border-radius: 0 0 10px 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* Estilo para el contenedor de la balanza */
+    .scale-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      z-index: 1000;
+      padding: 15px;
+      border: 1px solid #dee2e6;
+    }
+
+    .scale-header {
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .scale-body {
+      margin-top: 10px;
+    }
+
+    /* Estilo para el resumen de venta flotante */
+    .floating-summary {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 300px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      z-index: 1000;
+      padding: 15px;
+      border: 1px solid #dee2e6;
+    }
+
+    .summary-header {
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .summary-body {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 <div class="container-custom">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4">Venta de Productos</h1>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">Venta de Productos</h1>
     <a href="/menu" class="btn btn-secondary">⬅️ Volver al menú</a>
   </div>
 
-  <!-- Sección de búsqueda y escáner alineados -->
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <label for="search" class="form-label">Buscar producto:</label>
-      <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
-    </div>
-    <div class="col-md-6">
-      <label for="barcode-input" class="form-label">📷 Escanear código de barras:</label>
-      <div class="input-group">
-        <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
-        <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
-      </div>
-    </div>
-  </div>
-
-  <button type="button" class="btn btn-success mb-3" onclick="addProduct()">➕ Agregar producto</button>
-
-  <!-- Sección de balanza -->
- <div class="barcode-section">
-  <h3>⚖️ Balanza Digital (Web Serial API)</h3>
-  
-  <!-- Estado de conexión mejorado -->
-  <div id="scale-status" class="alert alert-secondary mb-3">
-    <i class="bi bi-usb-symbol"></i> Balanza no conectada
-    <span id="reconnect-message" class="small text-muted" style="display: none;">
-      Intentando reconectar automáticamente...
-    </span>
-  </div>
-  
-  <!-- Display de peso -->
-  <div class="mb-3 p-3 bg-light border rounded text-center">
-    <h4 id="weight-display">0.000 kg</h4>
-  </div>
-  
-  <!-- Botones de control -->
-    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
-        <button id="connect-btn" class="btn btn-primary" onclick="connectSerial()">
-            <i class="bi bi-plug"></i> Conectar Balanza
-        </button>
-    <button id="disconnect-btn" class="btn btn-danger" onclick="disconnectSerial()" disabled>
-      <i class="bi bi-plug-fill"></i> Desconectar
-    </button>
-    <button id="tare-btn" class="btn btn-warning" onclick="sendTareCommand()" disabled>
-      <i class="bi bi-arrow-counterclockwise"></i> Tara
-    </button>
-  </div>
-</div>
-  <!-- Formulario de venta -->
-  <form id="venta-form" method="post" action="/process-sale" onsubmit="handleVenta(event)">
-    <div class="row g-4">
-      <div class="col-md-8">
-        <div class="form-container">
-          <h3>🛒 Productos</h3>
-          <table class="table table-striped table-bordered sales-table">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Stock</th>
-                <th>Precio Unitario</th>
-                <th>IVA %</th>
-                <th>Subtotal</th>
-                <th>Eliminar</th>
-              </tr>
-            </thead>
-            <tbody id="summary-body">
-              <!-- dinámico -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-container">
-          <h3>💳 Pago</h3>
-          <div class="mb-3">
-            <label for="payment_method" class="form-label">Método de pago:</label>
-            <select name="payment_method" id="payment_method" class="form-select" required>
-              <option value="">Seleccione...</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="Nequi">Nequi</option>
-              <option value="Daviplata">Daviplata</option>
-              <option value="Bancolombia">Bancolombia</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label>Subtotal:</label>
-            <div id="subtotal_display">$0.00</div>
-        </div>
-        <div class="mb-3">
-            <label>IVA:</label>
-            <div id="iva_display">$0.00</div>
-        </div>
-        <div class="mb-3">
-            <label>Total a pagar:</label>
-            <div id="total_display">$0.00</div>
-        </div>  
-          <div class="mb-3">
-            <label for="money_received" class="form-label">Dinero recibido:</label>
-            <input type="number" step="0.01" id="money_received" name="money_received" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label>Total a pagar:</label>
-            <div id="total_display">$0.00</div>
-          </div>
-          <div class="mb-3">
-            <label>Dinero a devolver:</label>
-            <div id="change_display">$0.00</div>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">💾 Registrar venta</button>
-        </div>
-      </div>
+  <div class="tab-pane fade show active" id="sale-tab-pane" role="tabpanel" aria-labelledby="sale-tab">
+  <form id="sale-form" method="post" action="/process-sale">
+    <div class="row">
+      <!-- ... (todo el contenido de la pestaña de venta) ... -->
     </div>
   </form>
+</div>
+  <!-- Pestañas principales -->
+  <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="sale-tab" data-bs-toggle="tab" data-bs-target="#sale-tab-pane" type="button" role="tab">Nueva Venta</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab">Historial</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-tab-pane" type="button" role="tab">Resumen</button>
+    </li>
+  </ul>
 
-  <!-- Resultados -->
-  {% if result %}
-  <div class="form-container">
-    <h2>Resultado:</h2>
-    {% if result.status == "ok" %}
-    <p><strong>Total:</strong> ${{ result.total }}</p>
-    <p><strong>Cambio:</strong> ${{ result.change }}</p>
-    <div class="d-flex flex-wrap gap-3 mt-3">
-      <button type="button" class="btn btn-info" onclick="printThermalTicket({{ result.sale_id }})">🖨️ Imprimir Ticket</button>
-      <button type="button" class="btn btn-success" onclick="downloadTicketPDF({{ result.sale_id }})">📄 Guardar PDF</button>
-    </div>
-    {% else %}
-    <p class="text-danger fw-semibold">{{ result.message }}</p>
-    {% endif %}
-  </div>
-  {% endif %}
+  <div class="tab-content" id="mainTabsContent">
+    <!-- Pestaña de Nueva Venta -->
+    <div class="tab-pane fade show active" id="sale-tab-pane" role="tabpanel" aria-labelledby="sale-tab">
+      <div class="row">
+        <div class="col-md-8">
+          <!-- Escáner -->
+          <div class="barcode-section mb-3">
+            <h3>📷 Escanear código de barras</h3>
+            <div class="input-group">
+              <input type="text" id="barcode-input" class="form-control" placeholder="Escanea un código de barras...">
+              <button class="btn btn-success" onclick="scanBarcode()">Buscar</button>
+            </div>
+          </div>
 
-  <!-- Resumen del día -->
-  <div class="sales-summary">
-    <h2>🧾Resumen del día</h2>
-    <ul class="list-unstyled">
-      <li><strong>Total vendido:</strong> ${{ resumen.total_vendido }}</li>
-      <li><strong>Productos vendidos:</strong> {{ resumen.productos_vendidos }}</li>
-      <li><strong>Número de ventas:</strong> {{ resumen.numero_ventas }}</li>
-    </ul>
-  </div>
+          <!-- Búsqueda rápida -->
+          <div class="mb-3">
+            <label for="search" class="form-label">Buscar producto:</label>
+            <div class="input-group">
+              <input type="text" id="search" class="form-control" placeholder="Escribe el nombre..." oninput="filterProducts()">
+              <button type="button" class="btn btn-success" onclick="addProduct()">➕ Agregar</button>
+            </div>
+          </div>
 
-  <!-- Exportación -->
-  <div class="row export-buttons mb-4">
-    <div class="col-6 col-md-3">
-      <a href="/export-sales-excel" class="btn btn-success"><i class="bi bi-file-earmark-excel me-2"></i>Exportar Excel</a>
-    </div>
-    <div class="col-6 col-md-3">
-      <a href="/export-sales-pdf"  class="btn btn-danger"><i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF</a>
-    </div>
-    <div class="col-md-6 mt-3 mt-md-0">
-      <form action="/export-sales-by-date" method="get" class="d-flex flex-column flex-md-row align-items-md-center gap-2">
-        <label for="selected_date" class="form-label fw-bold">Por fecha:</label>
-        <input type="date" id="selected_date" name="selected_date" class="form-control" required>
-        <button type="submit" class="btn btn-primary"><i class="bi bi-download me-2"></i>Exportar</button>
+          <!-- Productos -->
+          <div class="form-container">
+            <h3>🛒 Productos</h3>
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered sales-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Stock</th>
+                    <th>Precio Unitario</th>
+                    <th>IVA %</th>
+                    <th>Subtotal</th>
+                    <th>Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-body">
+                  <!-- dinámico -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <!-- Formulario de pago -->
+          <div class="form-container">
+            <h3>💳 Pago</h3>
+            <div class="mb-3">
+              <label for="payment_method" class="form-label">Método de pago:</label>
+              <select name="payment_method" id="payment_method" class="form-select" required>
+                <option value="">Seleccione...</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="Nequi">Nequi</option>
+                <option value="Daviplata">Daviplata</option>
+                <option value="Bancolombia">Bancolombia</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label>Subtotal:</label>
+              <div id="subtotal_display" class="fw-bold">$0.00</div>
+            </div>
+            
+            <div class="mb-3">
+              <label>IVA:</label>
+              <div id="iva_display" class="fw-bold">$0.00</div>
+            </div>
+            
+            <div class="mb-3">
+              <label>Total a pagar:</label>
+              <div id="total_display" class="fw-bold fs-5">$0.00</div>
+            </div>  
+            
+            <div class="mb-3">
+              <label for="money_received" class="form-label">Dinero recibido:</label>
+              <input type="number" step="0.01" id="money_received" name="money_received" class="form-control" required>
+            </div>
+            
+            <div class="mb-3">
+              <label>Cambio:</label>
+              <div id="change_display">$0.00</div>
+            </div>
+             <button type="button" class="btn btn-primary w-100 mt-3" onclick="processSale()">💾 Registrar venta</button>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
-  </div>
 
-  <!-- Historial -->
-  <div class="sales-history">
-    <h2>🧾Historial de ventas</h2>
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Total</th>
-            <th>Método de Pago</th>
-            <th>Fecha</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for v in ventas %}
-          <tr>
-            <td>{{ v.product.nombre }}</td>
-            <td>{{ v.quantity }}</td>
-            <td>${{ v.total }}</td>
-            <td>{{ v.payment_method }}</td>
-            <td>{{ v.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>
-              <form method="post" action="/delete-sale" onsubmit="return confirm('¿Seguro que deseas eliminar esta venta?');">
-                <input type="hidden" name="sale_id" value="{{ v.id }}">
-                <button type="submit" class="btn btn-sm btn-danger">❌ Eliminar</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <!-- Resultados (solo una sección) -->
+    {% if result %}
+    <div class="form-container" id="result-container">
+      <h2>Resultado:</h2>
+      {% if result.status == "ok" %}
+      <p><strong>Total:</strong> ${{ result.total }}</p>
+      <p><strong>Cambio:</strong> ${{ result.change }}</p>
+      <div class="d-flex flex-wrap gap-3 mt-3">
+        <button type="button" class="btn btn-info" onclick="printThermalTicket({{ result.sale_id }})">🖨️ Imprimir Ticket</button>
+        <button type="button" class="btn btn-success" onclick="downloadTicketPDF({{ result.sale_id }})">📄 Guardar PDF</button>
+      </div>
+      {% else %}
+      <p class="text-danger fw-semibold">{{ result.message }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Pestaña de Historial -->
+    <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Historial de Ventas</h2>
+        <div class="export-buttons">
+          <a href="/export-sales-excel" class="btn btn-success me-2"><i class="bi bi-file-earmark-excel me-2"></i>Excel</a>
+          <a href="/export-sales-pdf" class="btn btn-danger me-2"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</a>
+          <form action="/export-sales-by-date" method="get" class="d-inline">
+            <input type="date" id="selected_date" name="selected_date" 
+            class="form-control d-inline-block" style="width: auto;" 
+            value="{{ hoy.strftime('%Y-%m-%d') }}" required>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-download me-2"></i>Exportar</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+          <thead class="table-primary">
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Productos</th>
+              <th>Total</th>
+              <th>Método Pago</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in ventas %}
+            <tr>
+              <td>{{ v.id }}</td>
+              <td>{{ v.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>
+                {% for item in v.items %}
+                  {{ item.product.nombre }} ({{ item.quantity }})<br>
+                {% endfor %}
+              </td>
+              <td>${{ v.total }}</td>
+              <td>{{ v.payment_method }}</td>
+              <td>
+                <button class="btn btn-sm btn-info me-1" onclick="printThermalTicket({{ v.id }})">
+                  <i class="bi bi-printer"></i>
+                </button>
+                <button class="btn btn-sm btn-success me-1" onclick="downloadTicketPDF({{ v.id }})">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </button>
+                <form method="post" action="/delete-sale" onsubmit="return confirm('¿Eliminar esta venta?');" class="d-inline">
+                  <input type="hidden" name="sale_id" value="{{ v.id }}">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pestaña de Resumen -->
+    <div class="tab-pane fade" id="summary-tab-pane" role="tabpanel" aria-labelledby="summary-tab">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="sales-summary">
+            <h3><i class="bi bi-graph-up me-2"></i>Resumen del Día</h3>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Total Vendido</h5>
+                    <p class="card-text fs-3 fw-bold text-success">${{ resumen.total_vendido }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Ventas</h5>
+                    <p class="card-text fs-3 fw-bold text-primary">{{ resumen.numero_ventas }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Productos Vendidos</h5>
+                    <p class="card-text fs-3 fw-bold text-info">{{ resumen.productos_vendidos }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-body text-center">
+                    <h5 class="card-title">Promedio por Venta</h5>
+                    <p class="card-text fs-3 fw-bold text-warning">${{ (resumen.total_vendido / resumen.numero_ventas if resumen.numero_ventas > 0 else 0)|round(2) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="sales-summary">
+            <h3><i class="bi bi-star me-2"></i>Productos Más Vendidos</h3>
+            <div class="table-responsive mt-3">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for top in top_productos %}
+                  <tr>
+                    <td>{{ top.nombre }}</td>
+                    <td>{{ top.cantidad }}</td>
+                    <td>${{ top.total }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- Contenedor flotante de la balanza -->
+<div class="scale-container">
+  <div class="scale-header" onclick="toggleScaleBody()">
+    <h5 class="mb-0">⚖️ Balanza Digital</h5>
+    <i class="bi bi-chevron-down" id="scale-toggle-icon"></i>
+  </div>
+  <div class="scale-body" id="scale-body">
+    <div id="scale-status" class="alert alert-secondary mb-2">
+      <i class="bi bi-usb-symbol"></i> Balanza no conectada
+    </div>
+    
+    <div class="mb-2 p-2 bg-light border rounded text-center">
+      <h4 id="weight-display">0.000 kg</h4>
+    </div>
+    
+    <div class="d-grid gap-2">
+      <button id="connect-btn" class="btn btn-sm btn-primary" onclick="connectSerial()">
+        <i class="bi bi-plug"></i> Conectar
+      </button>
+      <button id="disconnect-btn" class="btn btn-sm btn-danger" onclick="disconnectSerial()" disabled>
+        <i class="bi bi-plug-fill"></i> Desconectar
+      </button>
+      <button id="tare-btn" class="btn btn-sm btn-warning" onclick="sendTareCommand()" disabled>
+        <i class="bi bi-arrow-counterclockwise"></i> Tara
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Resumen flotante de la venta actual -->
+<div class="floating-summary">
+  <div class="summary-header" onclick="toggleSummaryBody()">
+    <h5 class="mb-0">🧮 Resumen Venta</h5>
+    <i class="bi bi-chevron-down" id="summary-toggle-icon"></i>
+  </div>
+  <div class="summary-body" id="summary-body-floating">
+    <div class="d-flex justify-content-between mb-1">
+      <span>Subtotal:</span>
+      <span id="floating-subtotal">$0.00</span>
+    </div>
+    <div class="d-flex justify-content-between mb-1">
+      <span>IVA:</span>
+      <span id="floating-iva">$0.00</span>
+    </div>
+    <div class="d-flex justify-content-between mb-2 fw-bold">
+      <span>Total:</span>
+      <span id="floating-total">$0.00</span>
+    </div>
+    <div class="progress mb-2" style="height: 5px;">
+      <div class="progress-bar" id="sale-progress" role="progressbar" style="width: 0%"></div>
+    </div>
+    <small class="text-muted">{{ resumen.numero_ventas }} ventas hoy</small>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Variables globales
 let serialPort = null;
 let reader = null;
 let currentWeight = 0;
 let selectedWeightProduct = null;
+let scaleBodyVisible = true;
+let summaryBodyVisible = true;
 
+// Toggle para mostrar/ocultar la balanza
+function toggleScaleBody() {
+  const scaleBody = document.getElementById('scale-body');
+  const icon = document.getElementById('scale-toggle-icon');
+  
+  scaleBodyVisible = !scaleBodyVisible;
+  scaleBody.style.display = scaleBodyVisible ? 'block' : 'none';
+  icon.className = scaleBodyVisible ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+}
+
+// Toggle para mostrar/ocultar el resumen
+function toggleSummaryBody() {
+  const summaryBody = document.getElementById('summary-body-floating');
+  const icon = document.getElementById('summary-toggle-icon');
+  
+  summaryBodyVisible = !summaryBodyVisible;
+  summaryBody.style.display = summaryBodyVisible ? 'block' : 'none';
+  icon.className = summaryBodyVisible ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+}
+
+// Conexión serial con la balanza
 async function connectSerial() {
     try {
-        // Solicitar puerto serial al usuario
         serialPort = await navigator.serial.requestPort();
-        
-        // Abrir el puerto con la configuración adecuada
         await serialPort.open({ 
-            baudRate: 9600,  // Ajusta según tu balanza
+            baudRate: 9600,
             dataBits: 8,
             stopBits: 1,
             parity: 'none'
         });
         
         updateScaleUI(true);
-        
-        // Iniciar lectura continua
         readFromSerial();
-        
     } catch (error) {
         console.error("Error al conectar:", error);
         updateScaleUI(false);
@@ -292,6 +516,7 @@ async function connectSerial() {
     }
 }
 
+// Lectura de datos de la balanza
 async function readFromSerial() {
     try {
         const decoder = new TextDecoderStream();
@@ -305,13 +530,11 @@ async function readFromSerial() {
                 break;
             }
             
-            // Procesar los datos recibidos (ajusta según el protocolo de tu balanza)
-            const weightMatch = value.match(/(\d+\.\d+)/); // Ejemplo para peso: "1.234 kg"
+            const weightMatch = value.match(/(\d+\.\d+)/);
             if (weightMatch) {
                 currentWeight = parseFloat(weightMatch[1]);
                 updateWeightDisplay();
                 
-                // Actualizar producto seleccionado si existe
                 if (selectedWeightProduct) {
                     updateProductQuantity(selectedWeightProduct, currentWeight);
                 }
@@ -323,6 +546,7 @@ async function readFromSerial() {
     }
 }
 
+// Desconexión de la balanza
 async function disconnectSerial() {
     try {
         if (reader) {
@@ -339,12 +563,12 @@ async function disconnectSerial() {
     }
 }
 
+// Comando de tara
 async function sendTareCommand() {
     if (!serialPort || !serialPort.writable) return;
     
     try {
         const writer = serialPort.writable.getWriter();
-        // Envía el comando de tara (ajusta según tu balanza)
         await writer.write(new TextEncoder().encode("T\r\n")); 
         writer.releaseLock();
     } catch (error) {
@@ -352,6 +576,7 @@ async function sendTareCommand() {
     }
 }
 
+// Actualizar UI de la balanza
 function updateScaleUI(connected) {
     const statusElement = document.getElementById('scale-status');
     const connectBtn = document.getElementById('connect-btn');
@@ -359,13 +584,13 @@ function updateScaleUI(connected) {
     const tareBtn = document.getElementById('tare-btn');
     
     if (connected) {
-        statusElement.className = 'alert alert-success mb-3';
+        statusElement.className = 'alert alert-success mb-2';
         statusElement.innerHTML = '<i class="bi bi-check-circle"></i> Balanza conectada';
         connectBtn.disabled = true;
         disconnectBtn.disabled = false;
         tareBtn.disabled = false;
     } else {
-        statusElement.className = 'alert alert-secondary mb-3';
+        statusElement.className = 'alert alert-secondary mb-2';
         statusElement.innerHTML = '<i class="bi bi-usb-symbol"></i> Balanza no conectada';
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
@@ -374,86 +599,53 @@ function updateScaleUI(connected) {
     }
 }
 
+// Actualizar display de peso
 function updateWeightDisplay() {
     const weightDisplay = document.getElementById('weight-display');
     weightDisplay.textContent = currentWeight.toFixed(3) + ' kg';
-    
-    if (currentWeight < 0) {
-        weightDisplay.style.color = 'red';
-    } else {
-        weightDisplay.style.color = '';
-    }
+    weightDisplay.style.color = currentWeight < 0 ? 'red' : '';
 }
 
-// Verificar compatibilidad al cargar la página
+// Verificar compatibilidad al cargar
 document.addEventListener('DOMContentLoaded', () => {
     if (!('serial' in navigator)) {
         document.getElementById('scale-status').innerHTML = 
             '<i class="bi bi-exclamation-triangle"></i> Web Serial API no soportada. Usa Chrome/Edge.';
         document.getElementById('connect-btn').disabled = true;
     }
-});
-// Actualizar el display de peso
-function updateWeightDisplay() {
-    const weightDisplay = document.getElementById('weight-display');
-    weightDisplay.textContent = currentWeight.toFixed(3) + ' kg';
     
-    // Cambiar color si el peso es negativo
-    if (currentWeight < 0) {
-        weightDisplay.style.color = 'red';
-    } else {
-        weightDisplay.style.color = '';
-    }
-}
-// Simulador de lectura de balanza (reemplazar con conexión real)
-
-// Función para manejar la selección de producto
-function onProductSelected(product) {
-    const isWeightProduct = product.unidad_stock.toLowerCase().includes('kg') || 
-                          product.unidad_stock.toLowerCase().includes('gr') ||
-                          product.unidad_stock.toLowerCase().includes('g');
-    
-    if (isWeightProduct) {
-        selectedWeightProduct = product;
-        document.getElementById('weight-product-info').classList.remove('d-none');
-        document.getElementById('weight-product-name').textContent = product.nombre;
-        
-        // Si la balanza está conectada, agregar el producto con el peso actual
-        if (scaleConnected) {
-            addProduct(product);
-        }
-    } else {
-        selectedWeightProduct = null;
-        document.getElementById('weight-product-info').classList.add('d-none');
-    }
-}
-
-// Inicializar al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-    refreshSerialPorts();
+    // Inicializar tooltips de Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
-// Función para actualizar la cantidad del producto en la tabla
-function updateProductQuantity(product, weight) {
-    const tbody = document.getElementById('summary-body');
-    const rows = tbody.getElementsByTagName('tr');
-    
-    // Buscar si el producto ya está en la tabla
-    for (let row of rows) {
-        const productName = row.querySelector('input[name="product"]').value;
-        if (productName === product.nombre) {
-            const qtyInput = row.querySelector('input[name="quantity"]');
-            qtyInput.value = weight.toFixed(3);
-            calculateTotals();
-            return;
-        }
+// Datos de productos
+const productos = [
+    {% for p in productos %}
+    {
+        nombre: "{{ p.nombre }}",
+        precio: {{ p.precio }},
+        stock: {{ p.stock }},
+        iva: {{ p.iva }},
+        unidad_stock: "{{ p.unidad_stock }}",
+        codigo_barras: "{{ p.codigo_barras if p.codigo_barras else '' }}"
+    },
+    {% endfor %}
+];
+
+// Filtrar productos
+function filterProducts() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const options = productos.filter(p => p.nombre.toLowerCase().includes(search));
+    if (options.length === 1) {
+        addProduct(options[0]);
+        document.getElementById('search').value = '';
     }
-    
-    // Si no está en la tabla, agregarlo
-    addProduct(product);
 }
 
-// Modificar la función addProduct
+// Agregar producto
 function addProduct(product = null) {
     if (!product) {
         const search = document.getElementById('search').value.toLowerCase();
@@ -465,7 +657,6 @@ function addProduct(product = null) {
     }
 
     const tbody = document.getElementById('summary-body');
-    
     const existingRow = Array.from(tbody.rows).find(row => {
         return row.querySelector('input[name="product"]').value === product.nombre;
     });
@@ -473,6 +664,9 @@ function addProduct(product = null) {
     if (existingRow) {
         const qtyInput = existingRow.querySelector('input[name="quantity"]');
         const currentQty = parseFloat(qtyInput.value);
+        const isWeightProduct = product.unidad_stock.toLowerCase().includes('kg') || 
+                              product.unidad_stock.toLowerCase().includes('gr') ||
+                              product.unidad_stock.toLowerCase().includes('g');
         const newQty = currentQty + (isWeightProduct ? currentWeight : 1);
         qtyInput.value = newQty;
         qtyInput.dispatchEvent(new Event('change'));
@@ -500,67 +694,25 @@ function addProduct(product = null) {
         <td>$${product.precio.toFixed(2)}</td>
         <td>${product.iva || 0}%</td>
         <td class="subtotal">$${(product.precio * (isWeightProduct ? currentWeight : 1)).toFixed(2)}</td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">❌</button></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></td>
     `;
 
     tbody.appendChild(row);
     calculateTotals();
     
     if (isWeightProduct) {
-        selectedProduct = product;
-        document.getElementById('weight-product-info').style.display = 'block';
-        document.getElementById('weight-product-name').textContent = product.nombre;
+        selectedWeightProduct = product;
     }
 }
 
-
-// Iniciar la lectura de la balanza al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-    simulateScaleReading(); // Reemplazar con la conexión real a la balanza
-});
-
-// Modificar la función de búsqueda para manejar selección de productos
-function filterProducts() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const options = productos.filter(p => p.nombre.toLowerCase().includes(search));
-    
-    if (options.length === 1) {
-        onProductSelected(options[0]);
-    } else {
-        // Si no hay coincidencia exacta, deseleccionar
-        selectedProduct = null;
-        document.getElementById('weight-product-info').style.display = 'none';
-    }
-}
-    const productos = [
-        {% for p in productos %}
-        {
-            nombre: "{{ p.nombre }}",
-            precio: {{ p.precio }},
-            stock: {{ p.stock }},
-            iva: {{ p.iva }},  // ¡Asegúrate de incluir este campo!
-            unidad_stock: "{{ p.unidad_stock }}",
-            codigo_barras: "{{ p.codigo_barras if p.codigo_barras else '' }}"
-        },
-        {% endfor %}
-    ];
-
-    function filterProducts() {
-        const search = document.getElementById('search').value.toLowerCase();
-        const options = productos.filter(p => p.nombre.toLowerCase().includes(search));
-        if (options.length === 1) {
-            addProduct(options[0]);
-            document.getElementById('search').value = '';  // limpia el input
-        }
-    }
-
-
+// Eliminar fila
 function removeRow(button) {
     const row = button.closest('tr');
     row.remove();
     calculateTotals();
 }
 
+// Calcular totales
 function calculateTotals() {
     let subtotal = 0;
     let ivaTotal = 0;
@@ -593,159 +745,231 @@ function calculateTotals() {
     });
 
     let total = subtotal + ivaTotal;
+    total = Math.ceil(total / 50) * 50;
     
-    // Redondear a los 50 más cercanos (hacia arriba)
-    const redondeo = 50; // Redondear a múltiplos de 50
-    total = Math.ceil(total / redondeo) * redondeo;
-    
-    // Si quieres que 1750 se mantenga como 1750 (en lugar de subir a 1800)
-    // puedes usar esta versión alternativa:
-    // const residuo = total % redondeo;
-    // total = residuo > 0 ? total + (redondeo - residuo) : total;
-
-    // Actualizar displays
+    // Actualizar displays principales
     document.getElementById('subtotal_display').textContent = `$${subtotal.toFixed(2)}`;
     document.getElementById('iva_display').textContent = `$${ivaTotal.toFixed(2)}`;
     document.getElementById('total_display').textContent = `$${total.toFixed(2)}`;
+
+    // Actualizar resumen flotante
+    document.getElementById('floating-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('floating-iva').textContent = `$${ivaTotal.toFixed(2)}`;
+    document.getElementById('floating-total').textContent = `$${total.toFixed(2)}`;
+    
+    // Actualizar barra de progreso (ejemplo: meta de $5000)
+    const progress = Math.min((total / 5000) * 100, 100);
+    document.getElementById('sale-progress').style.width = `${progress}%`;
+    document.getElementById('sale-progress').className = 
+        `progress-bar ${progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success'}`;
 
     // Calcular cambio
     const moneyReceived = parseFloat(document.getElementById('money_received').value) || 0;
     const change = moneyReceived - total;
     
-    // Mostrar el cambio
     const changeDisplay = document.getElementById('change_display');
     changeDisplay.textContent = `$${Math.abs(change).toFixed(2)}`;
-
-    if (change < 0) {
-        changeDisplay.style.color = '#dc3545';
-        changeDisplay.style.backgroundColor = '#ffe6e6';
-    } else {
-        changeDisplay.style.color = '#28a745';
-        changeDisplay.style.backgroundColor = '#e9fce9';
-    }
+    changeDisplay.style.color = change < 0 ? '#dc3545' : '#28a745';
+    changeDisplay.style.backgroundColor = change < 0 ? '#ffe6e6' : '#e9fce9';
 }
 
-// Agregar event listeners
-document.getElementById('money_received').addEventListener('input', calculateTotals);
-document.getElementById('money_received').addEventListener('change', calculateTotals);
-
-// Inicializar al cargar la página
-document.addEventListener('DOMContentLoaded', calculateTotals);
-    // Función para manejar el escaneo de código de barras
-    async function scanBarcode() {
-        const barcode = document.getElementById('barcode-input').value.trim();
-        if (!barcode) return;
+// Escanear código de barras
+async function scanBarcode() {
+    const barcode = document.getElementById('barcode-input').value.trim();
+    if (!barcode) return;
+    
+    try {
+        const producto = productos.find(p => p.codigo_barras === barcode);
         
-        try {
-            // Opción 1: Buscar directamente en los productos cargados
-            const producto = productos.find(p => p.codigo_barras === barcode);
+        if (producto) {
+            addProduct(producto);
+            document.getElementById('barcode-input').value = '';
+            document.getElementById('barcode-input').focus();
+        } else {
+            const response = await fetch('/get-product-by-barcode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `barcode=${encodeURIComponent(barcode)}`
+            });
             
-            if (producto) {
-                addProduct(producto);
+            const data = await response.json();
+            
+            if (data.status === "ok") {
+                addProduct(data.product);
                 document.getElementById('barcode-input').value = '';
                 document.getElementById('barcode-input').focus();
             } else {
-                // Opción 2: Hacer una petición al servidor si no se encuentra localmente
-                const response = await fetch('/get-product-by-barcode', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `barcode=${encodeURIComponent(barcode)}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === "ok") {
-                    addProduct(data.product);
-                    document.getElementById('barcode-input').value = '';
-                    document.getElementById('barcode-input').focus();
-                } else {
-                    alert(data.message || "Producto no encontrado");
-                }
+                alert(data.message || "Producto no encontrado");
             }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Error al buscar el producto");
         }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error al buscar el producto");
     }
+}
 
-    // Configurar eventos del escáner
-    document.getElementById('barcode-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
+// Eventos del escáner
+document.getElementById('barcode-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        scanBarcode();
+    }
+});
+
+let barcodeTimer;
+document.getElementById('barcode-input').addEventListener('input', function(e) {
+    clearTimeout(barcodeTimer);
+    barcodeTimer = setTimeout(() => {
+        if (this.value.length > 3) {
             scanBarcode();
         }
-    });
+    }, 100);
+});
 
-    let barcodeTimer;
-    document.getElementById('barcode-input').addEventListener('input', function(e) {
-        clearTimeout(barcodeTimer);
-        barcodeTimer = setTimeout(() => {
-            if (this.value.length > 3) {
-                scanBarcode();
-            }
-        }, 100);
-    });
-
-  function printThermalTicket(saleId) {
-    console.log("Intentando imprimir ticket con ID:", saleId);
-    const printWindow = window.open(`/thermal-ticket/${saleId}`, '_blank', 'width=320,height=600');
+// Procesar venta
+async function processSale() {
+    if (!validateForm()) return;
     
+    const btn = document.querySelector('button[onclick="processSale()"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+    btn.disabled = true;
+
+    try {
+        const total = parseFloat(document.getElementById('total_display').textContent.replace('$', ''));
+        const moneyReceived = parseFloat(document.getElementById('money_received').value) || total; // Default to total if not provided
+        
+        const data = {
+            payment_method: document.getElementById('payment_method').value,
+            money_received: moneyReceived,  // Asegúrate de enviar esto
+            change: moneyReceived - total,
+            product: [],
+            quantity: []
+        };
+
+        // 2. Agregar productos
+        document.querySelectorAll('#summary-body tr').forEach(row => {
+            data.product.push(row.querySelector('input[name="product"]').value);
+            data.quantity.push(parseFloat(row.querySelector('input[name="quantity"]').value));
+        });
+
+        // 3. Enviar datos como JSON
+        const response = await fetch('/process-sale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        // 4. Manejar respuesta
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.status !== "ok") {
+            throw new Error(result.message || "Error en el servidor");
+        }
+
+        // 5. Mostrar resultados
+        showSaleResult(result);
+        
+    } catch (error) {
+        console.error("Error en processSale:", error);
+        alert(`Error al procesar la venta: ${error.message}`);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+function showSaleResult(result) {
+    const resultContainer = document.getElementById('result-container') || 
+        document.createElement('div');
+    
+    resultContainer.id = 'result-container';
+    resultContainer.className = 'form-container mt-4';
+    
+    if (result.status === "ok") {
+        resultContainer.innerHTML = `
+            <h2>Resultado:</h2>
+            <p><strong>Total:</strong> $${result.total}</p>
+            <p><strong>Cambio:</strong> $${result.change}</p>
+            <div class="d-flex flex-wrap gap-3 mt-3">
+                <button type="button" class="btn btn-info" onclick="printThermalTicket(${result.sale_id})">
+                    🖨️ Imprimir Ticket
+                </button>
+                <button type="button" class="btn btn-success" onclick="downloadTicketPDF(${result.sale_id})">
+                    📄 Guardar PDF
+                </button>
+            </div>
+        `;
+        
+        // Limpiar formulario solo si fue exitoso
+        document.getElementById('summary-body').innerHTML = '';
+        document.getElementById('money_received').value = '';
+        calculateTotals();
+    } else {
+        resultContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> ${result.message || "Error desconocido"}
+            </div>
+        `;
+    }
+    
+    if (!document.getElementById('result-container')) {
+        document.querySelector('#sale-tab-pane').appendChild(resultContainer);
+    }
+    
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+}
+// Validar formulario
+function validateForm() {
+    const rows = document.querySelectorAll('#summary-body tr');
+    if (rows.length === 0) {
+        alert("Debe agregar al menos un producto");
+        return false;
+    }
+    
+    const paymentMethod = document.getElementById('payment_method').value;
+    if (!paymentMethod) {
+        alert("Seleccione un método de pago");
+        return false;
+    }
+    
+    const moneyReceived = parseFloat(document.getElementById('money_received').value) || 0;
+    const total = parseFloat(document.getElementById('total_display').textContent.replace('$', ''));
+    
+    if (moneyReceived < total) {
+        alert("El dinero recibido es menor que el total a pagar");
+        return false;
+    }
+    
+    return true;
+}
+
+// Imprimir ticket
+function printThermalTicket(saleId) {
+    const printWindow = window.open(`/thermal-ticket/${saleId}`, '_blank', 'width=320,height=600');
     if (!printWindow) {
         alert("Por favor permite ventanas emergentes para imprimir el ticket");
         window.location.href = `/thermal-ticket/${saleId}`;
     }
 }
 
+// Descargar PDF
 function downloadTicketPDF(saleId) {
-    console.log("Descargando PDF para venta ID:", saleId);
     window.open(`/ticket/${saleId}`, '_blank');
 }
-function updateManualWeight() {
-    const input = document.getElementById('manual-weight');
-    const weight = parseFloat(input.value) || 0;
-    currentWeight = weight;
 
-    // Si hay un producto seleccionado por peso, actualizar su cantidad
-    if (selectedProduct) {
-        updateProductQuantity(selectedProduct, currentWeight);
-    }
-}
-
-async function handleVenta(event) {
-    event.preventDefault(); // No recarga la página
-
-    const form = document.getElementById('venta-form');
-    const formData = new FormData(form);
-
-    try {
-        const response = await fetch(form.action, {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) throw new Error("Error en la venta");
-
-        const resultHTML = await response.text();
-        
-        // Insertar resultado sin recargar la página
-        document.body.innerHTML = resultHTML;
-        // ⚠️ IMPORTANTE: Si haces esto, asegúrate de volver a conectar el DOM a los scripts (como balanza, productos, etc.)
-
-    } catch (err) {
-        alert("Error al registrar la venta");
-        console.error(err);
-    }
-}
+// Event listeners
+document.getElementById('money_received').addEventListener('input', calculateTotals);
+document.getElementById('money_received').addEventListener('change', calculateTotals);
+document.addEventListener('DOMContentLoaded', calculateTotals);
 </script>
-<div style="text-align: center; margin-top: 40px;">
-    <a href="/menu">
-        <button type="button" style="background-color: #6c757d; padding: 12px 24px; font-size: 16px; border-radius: 8px;">
-            ⬅️ Volver al menú
-        </button>
-    </a>
-</div>
-
 </body>
 </html>
